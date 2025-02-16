@@ -102,6 +102,7 @@ type drawText_command = {
    "width" ?: number | undefined,
    "color" ?: string,
    "size" ?: number,
+   font ?: string
 }
 
 type drawEllipse_command = {

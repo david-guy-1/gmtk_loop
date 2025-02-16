@@ -36,7 +36,7 @@ export function draw_wrap(lst : draw_command[], c: CanvasRenderingContext2D){
                 drawRectangle2(c, item.tlx,item.tly,item.width,item.height,item.color,item.widthA,item.fill,item.transparency);
             break;
             case "drawText":
-                drawText(c, item.text_,item.x,item.y,item.width,item.color,item.size);
+                drawText(c, item.text_,item.x,item.y,item.width,item.color,item.size, item.font);
             break;
             case "drawEllipse":
                 drawEllipse(c, item.posx,item.posy,item.brx,item.bry,item.color,item.transparency,item.rotate,item.start,item.end);
@@ -61,7 +61,8 @@ export function draw_wrap(lst : draw_command[], c: CanvasRenderingContext2D){
     }
 }
 
-class img_with_center{
+
+export class img_with_center{
 	commands : draw_command[];
 	x : number;
 	y : number;

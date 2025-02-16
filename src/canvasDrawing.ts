@@ -1,77 +1,7 @@
 // put this into get_type.py, enter "DONE" (no quotes).
 
-export function noNaN(lst : any[]){
-	for(var f of lst){
-		if(typeof(f) == "number" && isNaN(f)){
-			throw "noNaN but is NaN"
-		}
-		if(Array.isArray(f)){
-			noNaN(f);
-		}
-	}
-}
+import { add_obj, combine_obj, flatten, flatten_all, noNaN, normalize } from "./lines";
 
-export function length(v: number[] ) : number{
-	noNaN(arguments as any as any[][]);
-	var l = 0;
-	for(var item of v){
-		l += item*item;
-	}
-	return  Math.sqrt(l);
-}
-
-export function dist(v : number[], w : number[]) : number {
-	noNaN(arguments as any as any[][]);
-	if(v.length != w.length){
-		throw "moveTo with uneven lengths"; 
-	}
-	var s = 0;
-	for(var i=0; i < v.length; i++){
-		s += Math.pow((w[i] - v[i]),2);
-	}	
-	return Math.sqrt(s);
-}
-
-
-export function normalize(v : number[], amt : number) : number[]{
-	noNaN(arguments as any as any[][]);
-
-	var l =  length(v);
-	var out : number[] = [];
-	for(var item of v){
-		out.push(item /l * amt); 
-	}
-	return out; 
-}
-
-// start at v, end at w
-export function moveTo(v: number[], w : number[], dist : number) : number[]{
-	noNaN(arguments as any as any[][]);
-	var lst: number[] = [];
-	if(v.length != w.length){
-		throw "moveTo with uneven lengths"; 
-	}
-	for(var i=0; i < v.length; i++){
-		lst.push(w[i] - v[i]);
-	}
-	if(length(lst) < dist){
-		return JSON.parse(JSON.stringify(w)) as number[];
-	} else {
-		lst = normalize(lst, dist);
-		for(var i=0; i < v.length; i++){
-			lst[i] += v[i];
-		}		
-		return lst
-	}
-}
-
-export function number_to_hex(n : number) : string {
-	noNaN(arguments as any as any[][]);
-    if(n == 0){
-        return "";
-    }
-    return number_to_hex(Math.floor(n/16)) + "0123456789abcdef"[n%16] 
-}
 
 
 var imgStrings : any = {};
@@ -97,23 +27,38 @@ export function make_style(ctx : CanvasRenderingContext2D, style : fillstyle ) :
 	return x; 
 }
 
-
-export function drawImage(context :CanvasRenderingContext2D, img : string, x : number, y : number) {
-
-
+export function loadImage(img : string){
 	if(imgStrings[img] == undefined){
+		return new Promise<void>(function(x,y){
+			let im = new Image(); 
+			im.src = img;
+			im.onload = function(){
+				imgStrings[img] = im;
+				x(); 
+			}
+		})
+	}
+}
+
+export function drawImage(context :CanvasRenderingContext2D | undefined, img : string, x : number, y : number) {
+	if(imgStrings[img] == undefined){
+		console.log("load the image first " + img);
 		var im = new Image();
 		im.src = img;
 		im.onload = function(){
-			context.drawImage(im, x, y);
+			if(context){
+				context.drawImage(im, x, y);
+			}
 			imgStrings[img] = im; 
 		}
 	} else {
 		var im = imgStrings[img] as HTMLImageElement;
-		context.drawImage(im, x, y);
+		if(context){
+			context.drawImage(im, x, y);
+		}
 	}
-
 }
+
 
  export function drawLine(context :CanvasRenderingContext2D, x0 : number, y0: number, x1: number, y1: number, color :string = "black", width: number = 1) {
 	noNaN(arguments as any as any[][]);
@@ -196,9 +141,9 @@ export function drawPolygon(context :CanvasRenderingContext2D, points_x : number
 	
 }
 // coords are bottom left of text
- export function drawText(context :CanvasRenderingContext2D, text_ : string, x : number, y : number, width : number | undefined =undefined, color : string =  "black", size : number= 20) {
+ export function drawText(context :CanvasRenderingContext2D, text_ : string, x : number, y : number, width : number | undefined =undefined, color : string =  "black", size : number= 20, font :string = "Arial") {
 	noNaN(arguments as any as any[][]);
-    context.font = size + "px Arial";
+    context.font = size + `px ${font}`;
 	context.fillStyle = color
 	if(width == undefined){
 		context.fillText(text_, x,y);
@@ -220,7 +165,6 @@ export function drawPolygon(context :CanvasRenderingContext2D, points_x : number
 
  export function drawEllipse2(context :CanvasRenderingContext2D, posx : number, posy : number, width : number, height : number ,color : fillstyle="black", transparency : number =1,rotate : number = 0, start :number= 0 , end :number= 2*Math.PI){
 	noNaN(arguments as any as any[][]);
-	console.log(posy);
 	context.beginPath();
 	context.fillStyle=make_style(context, color)
     context.globalAlpha = transparency;
@@ -283,4 +227,84 @@ export function drawRoundedRectangle(context :CanvasRenderingContext2D, x0 : num
 		context.stroke();
 	}
 } 
+
+
+// QUICKLY make stuff 
+
+export function d_rect(...args : (number | number[])[] ) : drawRectangle_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 4){
+		throw "draw Rectangle without enough arguments"
+	}
+	return {"type":"drawRectangle", "tlx" : x[0], "tly" : x[1], "brx" : x[2], "bry" : x[3]}
+
+} 
+
+export function d_rect2(...args : (number | number[])[] ) : drawRectangle2_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 4){
+		throw "draw Rectangle 2 without enough arguments"
+	}
+	return {"type":"drawRectangle2", "tlx" : x[0], "tly" : x[1], "width" : x[2], "height" : x[3]}
+} 
+
+export function d_ellipse(...args : (number | number[])[] ) : drawEllipse_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 4){
+		throw "draw ellipse without enough arguments"
+	}
+	return {"type":"drawEllipse", "posx" : x[0], "posy" : x[1], "brx" : x[2], "bry" : x[3]}
+
+} 
+
+export function d_ellipse2(...args : (number | number[])[] ) : drawEllipseCR_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 4){
+		throw "draw ellipse 2 without enough arguments"
+	}
+	return {"type":"drawEllipseCR", "cx" : x[0], "cy" : x[1], "rx" : x[2], "ry" : x[3]}
+} 
+
+
+
+export function d_line(...args : (number | number[])[] ) : drawLine_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 4){
+		throw "draw line without enough arguments"
+	}
+	return {"type":"drawLine", "x0" : x[0], "y0" : x[1], "x1" : x[2], "y1" : x[3]}
+} 
+
+
+export function d_circle(...args : (number | number[])[] ) : drawCircle_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 3){
+		throw "draw circle without enough arguments"
+	}
+	return {"type":"drawCircle", "x" : x[0], "y" : x[1], "r" : x[2]}
+} 
+
+export function d_image(name : string , ...args : ( number | number[])[] ) : drawImage_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 2){
+		throw "draw image without enough arguments"
+	}
+	return {"type":"drawImage", "x" : x[0], "y" : x[1], "img" : name};
+} 
+
+
+export function d_text(text : string , ...args : ( number | number[])[] ) : drawText_command{
+	let x = flatten_all(args) as number[] ;
+	if(x.length != 2){
+		throw "draw text without enough arguments"
+	}
+	return {"type":"drawText", "x" : x[0], "y" : x[1], "text_" : text};
+} 
+
+
+export function add_com(x : draw_command, y : Record<string, any>) : draw_command{
+	combine_obj(x,y); // calls lines.ts 
+	return x; 
+}
+ 
 
