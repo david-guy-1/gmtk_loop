@@ -406,18 +406,17 @@ export function getIntersection(line1:point3d , line2:point3d) : point{
 // doLinesIntersect(412, 666, 620 , 434, 498 ,480 ,431 ,609 ) = false 
 // doLinesIntersect(100, 100, 200, 100, 100, 200, 200, 200) = false
 
-
+// cast a ray , and count number of intersections
 export function pointInsidePolygon(x : number, y : number , points : [number, number][]) {
     noNaN(arguments as any);
     let dx = Math.random() + 1;
     let dy = Math.random();
-    let max_x = max(points.map((x) => x[0]));
+    let max_x = max(points.map((x) => x[0])) - x; 
     let line = [x, y, x + dx * max_x, y + dy * max_x] ; 
     let counter = 0; 
     for(let i=0; i < points.length; i++){
-        let lst = flatten([line, points[i], i==points.length-1 ? points[0] : points[i+1]]); 
-		//@ts-ignore
-        if(doLinesIntersect.apply("",lst)){
+		let next_point = i == points.length-1 ? points[0] : points[i+1]
+        if(doLinesIntersect(line, points[i], next_point)){
             counter ++; 
         }
     }
@@ -526,6 +525,41 @@ export function getLineEndBR(...args : (number | number[])[] ){
 	console.log(getLineEndWH(211 ,290,1, 290,133,260,150,130)); // output should be 133, 290, line is [0,1,290] 
 	
 	console.log("all done")
+}
+
+
+
+// returns the list of vertices visited, in order 
+// neighbors is given as an oracle function
+// note that neighbors is  NOT required to be symmetric (that is: the graph can be directed); 
+export function bfs<T>(neighbors: (vertex: T) => T[], u: T, halting_condition ?: (vertex : T) => boolean ): T[] {
+    let visited: Set<T> = new Set();
+    let queue: T[] = [u];
+    let result: T[] = [];
+
+    while (queue.length > 0) {
+        let vertex = queue.shift();
+        if(vertex == undefined){ // empty list 
+            break; 
+        }
+        // visit the vertex
+        if (!visited.has(vertex)) {
+            visited.add(vertex);
+            result.push(vertex);
+			if(halting_condition != undefined){
+				if(halting_condition(vertex)){
+					break;
+				}
+			}
+            // add neighbors to the end of the list
+            for (let neighbor of neighbors(vertex)) {
+                if (!visited.has(neighbor)) {
+                    queue.push(neighbor);
+                }
+            }
+        }
+    }
+    return result;
 }
 
 	// given the coordinates of the top left (x and y smallest) corner of a rectangle, and its width and height, find the coordinates of the others. 

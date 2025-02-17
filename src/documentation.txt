@@ -96,7 +96,7 @@ doLinesIntersect(args : (number | number[])[]) // p1x, p1y, p2x, p2y, q1x, q1y, 
 pointInsidePolygon(x : number, y : number, points : [number, number][])
 getLineEndWH(args : (number | number[])[]) // a line (given by 2 points) and a rectangle 
 getLineEndBR(args : (number | number[])[])
-testCases()
+bfs(neighbors: (vertex: T) => T[], u: T): T[] ; // bfs, where neighbors is given as an oracle function, halting condition is also given
 corners(tlx : number, tly : number, width : number, height : number, angle : number)
 
 --
