@@ -68,6 +68,7 @@ lines.ts contains math functions :
 flatten(lst : T[][])
 flatten_all(lst : (T | T[])[])
 cell_index(top_left : point, w : number, h : number, amt_per_row : number, x : number, y : number) // grid stuff, see lines.ts comment for more info
+move_lst(a : T[] , b : T[]) // copies data from b to a, mutates a;
 combine_obj(obj : Record<string, any>, obj2 : Record<string, any>) // keys from obj2 are sent to obj
 add_obj(obj : Record<K, V[]>, k : K, v : V) // used when values are lists
 concat_obj(obj : Record<K, V[]>, k : K, v : V[]) // used when values are lists
@@ -86,8 +87,11 @@ point_to_color(n : point3d)
 number_to_hex(n : number)
 all_choices(x : T[], amt : number) // binomial coefficient
 all_combos(x : T[][]) // cartesian product
-pointInsideRectangleWH(args : (number | number[])[]) // px, py, tlx, tly, width, height
-pointInsideRectangleTLBR(args : (number | number[])[]) // x, py, tlx, tly, brx, bry
+pointInsideRectangleWH(args : (number | number[])[]) // x, y, tlx, tly, width, height
+pointInsideRectangleTL(args : (number | number[])[]) // x, y, tlx, tly, brx, bry
+vector_angle(v1 : point, v2 : point)
+moveInsideRectangleWH(args : (number | number[])[]) // x, y, tlx, tly, width, height
+moveInsideRectangleTL(args : (number | number[])[]) // x, y, tlx, tly, brx, bry
 max(x : number[])
 getIntersection(line1 : point3d, line2 : point3d)
 pointToCoefficients(args : (number | number[])[])// p1x, p1y, p2x , p2y

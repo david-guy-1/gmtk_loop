@@ -40,6 +40,17 @@ export function cell_index(top_left : point, w : number, h : number, amt_per_row
 }
 
 // mutates
+export function move_lst<T>(a : T[] , b : T[]) : T[]{
+	for(let i=0; i < a.length; i++){
+		if(b[i] != undefined){
+			a[i] = b[i]
+		}
+	}
+	return a;
+}
+
+
+// mutates
 export function combine_obj(obj : Record<string,any>,obj2 : Record<string,any>){
 	for(let item of Object.keys(obj2)){
 		obj[item] = obj2[item];
@@ -87,6 +98,14 @@ export function lerp(start : number[], end : number[], t : number) : number[] {
 
 
 // av + bw
+export function scalar_multiple(a : number, v : number[] ) : number[]  {
+	let x : number[] = [];
+	for(let i=0; i<v.length; i++){
+		x[i] = a * v[i];
+	}
+	return x; 
+}
+
 export function lincomb(a : number, v : number[], b : number, w : number[] ) : number[]  {
 	if(v.length != w.length){
 		throw "lincomb with different lengths"
@@ -97,6 +116,10 @@ export function lincomb(a : number, v : number[], b : number, w : number[] ) : n
 	}
 	return x; 
 }
+export function unit_vector(angle : number) : point{
+	return [Math.cos(angle), Math.sin(angle)]
+}
+
 
 export function num_diffs<T>(x : T[], y : T[]) : number{
 	let s= 0;
@@ -139,10 +162,11 @@ export function moveTo(v: number[], w : number[], dist_ : number) : number[]{
 	}
 }
 
+
 export function dist(v : number[], w : number[]) : number {
 	noNaN(arguments as any as any[][]);
 	if(v.length != w.length){
-		throw "move with uneven lengths"; 
+		throw "dist with uneven lengths"; 
 	}
 	let s = 0;
 	for(let i=0; i < v.length; i++){
@@ -150,6 +174,18 @@ export function dist(v : number[], w : number[]) : number {
 	}	
 	return Math.sqrt(s);
 }
+export function taxicab_dist(v  : number[], w : number[]){
+	if(v.length != w.length){
+		throw "taxicab_dist with uneven lengths"; 
+	}
+	let s = 0;
+	for(let i=0; i<v.length; i++){
+		s+=Math.abs(v[i] - w[i])
+	}
+	return s;
+
+}
+
 
 export function cross(a : number[], b : number[]){
 	if(a.length !== 3 || 3 !== b.length){
@@ -169,6 +205,10 @@ export function dot(a : number[],b : number[]){
 		s += a[i] * b[i];
 	}
 	return s; 
+}
+
+export function angle_between(v1 : number[],  v2 : number[]){
+	return Math.acos(dot(normalize(v1, 1), normalize(v2, 1)))
 }
 
 export function rescale(source_start : number, source_end : number, dest_start : number, dest_end : number, value : number) : number{
@@ -239,6 +279,29 @@ export function number_to_hex(n : number) : string {
     return number_to_hex(Math.floor(n/16)) + "0123456789abcdef"[n%16] 
 }
 
+function get_keys(s : Set<string>, obj : any){
+	// mutates s
+	if(Array.isArray(obj)){
+		for(let item of obj){
+			get_keys(s, item);
+		}
+	} else if (typeof(obj) == "object"){
+		for(let item of Object.keys(obj)){
+			s.add(item)
+			get_keys(s, obj[item]); 
+		}
+	}
+}
+
+
+export function json_alphabetical(obj : any) : string{
+	let keys = new Set<string>();
+	get_keys(keys, obj);
+	let keys_lst = [...keys]
+	keys_lst.sort()
+	return JSON.stringify(obj, keys_lst)
+
+}
 
 export function all_choices<T>(x : T[], amt : number) : T[][]{
 	if(amt == 0 ){
@@ -309,15 +372,54 @@ export function pointInsideRectangleWH(...args : (number | number[])[]){
 	return true;
 }
 
-export function pointInsideRectangleTLBR(...args : (number | number[])[]){
+export function pointInsideRectangleBR(...args : (number | number[])[]){
     noNaN(arguments as any);
 	let lst = flatten_all(args);
 	if(lst.length != 6){
-		throw "pointInsideRectangleTLBR must have 6 points";
+		throw "pointInsideRectangleBR must have 6 points";
 	}
 	let [px, py, tlx, tly, brx, bry]  = lst; 
 	return pointInsideRectangleWH(px, py, tlx, tly, brx-tlx, bry-tly);
 }
+
+export function vector_angle(v1 : point, v2 : point){
+	v1 = normalize(v1, 1) as point; 
+	v2 = normalize(v2, 1) as point;
+	return Math.acos(dot(v1, v2)); 
+}
+
+export function moveIntoRectangleWH(...args : (number | number[])[]){
+    noNaN(arguments as any);
+	let lst = flatten_all(args);
+	if(lst.length != 6){
+		throw "moveIntoRectangleWH must have 6 points";
+	}
+	let [px, py, tlx, tly, w, h]  = lst; 
+	if(px < tlx){
+		px = tlx;
+	}
+	if(px > tlx + w){
+		px = tlx + w;
+	}
+	if(py < tly){
+		py = tly;
+	}
+	if(py > tly+ h){
+		py = tly + h;
+	}
+	return [px, py];
+}
+
+export function moveIntoRectangleBR(...args : (number | number[])[]){
+    noNaN(arguments as any);
+	let lst = flatten_all(args);
+	if(lst.length != 6){
+		throw "moveIntoRectangleWH must have 6 points";
+	}
+	let [px, py, tlx, tly, brx, bry]  = lst; 
+	return moveIntoRectangleWH(px, py, tlx, tly, brx-tlx, bry-tly);
+}
+
 
 
 export function max(x : number[]){
@@ -364,6 +466,97 @@ export function getIntersection(line1:point3d , line2:point3d) : point{
 	}
 }
 
+// [x, y] : point , [a,b,c] : line
+export function pointClosestToLine(...args : (number | number[])[] ) : point3d{
+	let lst = flatten_all(args);
+	if(lst.length !=5){
+		throw "pointClosestToLine must have 5 points";
+	}
+	noNaN(arguments as any);
+	
+	// want to minimize (x -p1)^2 + (y-p2)^2 subject to ax+by=c, use lagrange multipliers
+	// L(x, y) = f(x,y) - \lambda g(x,y) - take partials and set them all to zero
+	// (x - p1)^2 + (y - p2)^2 - \lambda (ax + by - c) 
+	// dx = 2 (x-p1) - a \lambda
+	// dy = 2 (y-p2) - b \lambda
+	// d \lambda = ax + by - c
+	// expand, we get the system of linear equations:
+	// 2x - 2 p1 - a \lambda 
+	// 2y - 2 p2 - b \lambda
+	// ax + by - c
+	// [2, 0, -a] 2p1
+	// [0, 2, -b] 2p2
+	// [a, b, 0] c
+	// do Gaussian elimination : 
+	// [2, 0, -a] 2p1
+	// [a, b, 0] c
+	// [0, 2, -b] 2p2
+	// r1 / 2
+	// [1, 0, -a/2] p1
+	// [a, b, 0] c
+	// [0, 2, -b] 2p2
+	// r2 = r2 -a* r1 
+	// [1, 0, -a/2] p1
+	// [0, b, a^2/2] c - a*p1
+	// [0, 2, -b] 2p2
+	// r3 = r3 / 2
+	// [1, 0, -a/2] p1
+	// [0, b, a^2/2] c - a*p1
+	// [0, 1, -b/2] p2
+	
+	// assume b != 0 , if b = 0, we have y = p2, lambda = (c - a *p1)/(a^2/2), and x = p1 - lambda * (-a/2) = c/a
+	// otherwise: 
+
+	// r3 = r3 -(1/b)* r2
+	// [1, 0, -a/2] p1
+	// [0, b, a^2/2] c - a*p1
+	// [0, 0, -b/2 - a^2/(2b)] p2 - (c - a*p1)/b
+
+
+	let [p1, p2,a,b,c] = lst; 
+	if(b == 0){
+		// line is of the form x = c/a
+		return [c/a, p2, dist([p1, p2], [c/a, p2])]; 
+	}
+	let lambda = (p2 - (c - a*p1)/b)/ (-b/2 - a*a/(2*b));
+	let y= ((c - a*p1) -  lambda * a*a/2)/b
+	let x = p1 + a/2 * lambda
+	return [x,y, dist([p1, p2], [x,y])];
+}
+
+export function pointClosestToSegment(...args : (number | number[])[] ) : point3d{
+	let lst = flatten_all(args);
+	if(lst.length !=6){
+		throw "pointClosestToSegment must have 6 points";
+	}
+	noNaN(arguments as any);
+	
+	let [x, y, l1x, l1y, l2x, l2y] = lst;
+	let closest_point = pointClosestToLine(x,y,pointToCoefficients(l1x, l1y, l2x, l2y)); 
+	let between_ = false; 
+	if(l1x == l2x) {
+		// vertical line, test x value
+		between_ = between(closest_point[0], l1x, l2x); 
+	} else{
+		// test y value
+		between_ = between(closest_point[1], l1y, l2y); 
+	}
+	if(between_){
+		return closest_point;
+	} else {
+		// check endpoints
+		let d1 = dist([x,y], [l1x, l1y])
+		let d2 = dist([x,y], [l2x, l2y])
+		if(d1 < d2){
+			return [l1x, l1y, d1];
+		} else {
+			return [l2x, l2y, d2];
+		}
+	}
+}
+
+
+
  export function between(x:number ,b1:number , b2:number){ // returns if x is between b1 and b2  (inclusive:number)
     noNaN(arguments as any);
 	if (b1 <= x && x <= b2){
@@ -381,7 +574,7 @@ export function getIntersection(line1:point3d , line2:point3d) : point{
 	noNaN(arguments as any);
 	let lst = flatten_all(args);
 	if(lst.length !=8){
-		throw "doLinesIntersect must have 6 points";
+		throw "doLinesIntersect must have 8 points";
 	}
 	let [p1x, p1y, p2x, p2y, q1x, q1y, q2x, q2y] = lst; 
     
@@ -402,6 +595,25 @@ export function getIntersection(line1:point3d , line2:point3d) : point{
 	between(intersectionPoint[1]  , p1y, p2y) &&
 	between(intersectionPoint[1]  , q1y, q2y));
 }
+
+// walls are given px, py, qx, qy
+// move point towards target, stopping epsilon units right before the first wall 
+export function move_wall(point : point ,walls :[number,number,number,number][], target : point, amt? : number, epsilon : number = 0.001) : point{
+        if(amt != undefined){
+            target = moveTo(point,target,amt) as point;
+        }
+        for(let w of walls){
+            if(doLinesIntersect(point, target, w)){
+                let intersection = getIntersection(pointToCoefficients(point, target), pointToCoefficients(w));
+                // target = intersection + (start - intersection) normalized to 0.01
+                target = lincomb(1, intersection, 1, normalize(lincomb(1, point, -1, intersection), epsilon)) as point; 
+            }
+        }
+        return target
+}
+	
+	
+	
 // doLinesIntersect(412, 666, 620 , 434, 689, 675, 421, 514) = true
 // doLinesIntersect(412, 666, 620 , 434, 498 ,480 ,431 ,609 ) = false 
 // doLinesIntersect(100, 100, 200, 100, 100, 200, 200, 200) = false

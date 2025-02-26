@@ -49,6 +49,7 @@ function GameDisplay( props : {data  : gamedata, globalStore : globalStore_type}
     const [r, refresh] = useState<boolean>(false);
     let refs : Record<string, React.RefObject<HTMLCanvasElement> > = {}; 
     for(var item of display_data.canvas){
+		//@ts-ignore
         refs[item[0]] =  useRef<HTMLCanvasElement>(null);
     }
 
@@ -133,7 +134,7 @@ function GameDisplay( props : {data  : gamedata, globalStore : globalStore_type}
             interval = -1;
             changeSound(undefined);
         }
-    },[g,r])
+    },[g,r,props])
 
     const button_click_disp = function(s : string){
         let lst  = button_click(g, globalStore, s);
