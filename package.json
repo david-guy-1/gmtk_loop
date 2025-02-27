@@ -15,6 +15,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "ts-morph":"^25.0.1",
     "@eslint/js": "^9.17.0",
     "@types/lodash": "^4.17.15",
     "@types/react": "^18.3.18",

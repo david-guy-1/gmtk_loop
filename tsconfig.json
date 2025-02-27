@@ -5,6 +5,6 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions" : {
-	"lib":["esnext"]
+	"lib":["esnext","es2015"]
   }
 }

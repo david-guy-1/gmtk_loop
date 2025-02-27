@@ -186,6 +186,19 @@ export function taxicab_dist(v  : number[], w : number[]){
 
 }
 
+export function inf_norm(v  : number[], w : number[]){
+	if(v.length != w.length){
+		throw "inf_norm with uneven lengths"; 
+	}
+	let s = Number.NEGATIVE_INFINITY;
+	for(let i=0; i<v.length; i++){
+		s=max([s, Math.abs(v[i] - w[i])]);
+	}
+	return s;
+
+}
+
+
 
 export function cross(a : number[], b : number[]){
 	if(a.length !== 3 || 3 !== b.length){
@@ -285,7 +298,7 @@ function get_keys(s : Set<string>, obj : any){
 		for(let item of obj){
 			get_keys(s, item);
 		}
-	} else if (typeof(obj) == "object"){
+	} else if (typeof(obj) == "object" && obj != null){
 		for(let item of Object.keys(obj)){
 			s.add(item)
 			get_keys(s, obj[item]); 
@@ -643,7 +656,7 @@ export function pointInsidePolygon(x : number, y : number , points : [number, nu
 	noNaN(arguments as any);
 	let lst = flatten_all(args);
 	if(lst.length !=8){
-		throw "getLineEndWH must have 6 points";
+		throw "getLineEndWH must have 8 points";
 	}
 	let [p1x , p1y , p2x , p2y , tlx , tly , width ,height] = lst;
 	// ensure p1 is inside and 

@@ -1,9 +1,15 @@
 <html>
 
 <head>
-<script type="text/javascript" src="draw.js"></script>
 
-
+<script type="text/javascript">
+// workaround to get tsc output to work
+//// canvasDrawing, process_draws, lines  - ts to js, remove all "export"
+function define(x,y,z){
+z(window,window,window,window,window,window,window,window,window,window,window,window);
+}
+</script>
+<script type="text/javascript" src="canvasDrawing.js"></script><script type="text/javascript" src="lines.js"></script><script type="text/javascript" src="lodash.js"></script><script type="text/javascript" src="process_draws.js"></script>
 </head>
 
 <body onload="load()">
