@@ -1,0 +1,92 @@
+<html>
+
+<head>
+
+<script type="text/javascript">
+// workaround to get tsc output to work
+//// canvasDrawing, process_draws, lines  - ts to js, remove all "export"
+function define(x,y,z){
+z(window,window,window,window,window,window,window,window,window,window,window,window);
+}
+</script>
+<script type="text/javascript" src="canvasDrawing.js"></script><script type="text/javascript" src="lines.js"></script><script type="text/javascript" src="lodash.js"></script><script type="text/javascript" src="process_draws.js"></script><script type="text/javascript" src="zod.js"></script><script type="text/javascript" src="draw_commands_zod.js"></script><script type="text/javascript" src="draw_stuff.js"></script>
+</head>
+
+<body onload="load()">
+    <canvas id='bigc'  tabindex='1' width="600px" height="600px" style="border:1px solid black;z-index:2">
+        Canvas not supported
+      </canvas>
+      <br />
+      <div id="frames" style="position: absolute; top:0px;left:630px;border:1px solid black; height:600px; width:300px" ></div>
+      <div id="frames2" style="position: absolute; top:0px;left:940px;border:1px solid black; height:600px; width:300px" ></div>
+      <div id="frames3" style="position: absolute; top:0px;left:1250px;border:1px solid black; height:600px; width:300px" ></div>
+      <textarea id="data"></textarea><span id="message"></message></span><button onClick="display.selected_shape = undefined; display.selected_point = undefined; change(); "> Unselect all</button>Points display : <select name="cars" id="cars" onChange="display.show_points = arguments[0].target.selectedOptions[0].innerText;change();">
+        <option >all</option>
+        <option >layer</option>
+        <option>shape</option>
+        <option >none</option>
+      </select>
+       text goeshere
+      
+      
+      <br />Q : select point, E : unselect point + shape, R : add existing point to shape, F : pop point from shape, <br />
+        1 : line, 2 : bezier, 3 : smooth bezier, 4 : polygon, 5 : circle, 6 : bezier shape, 7 : smooth bezier shape
+        <br />
+        line, bezier and smooth bezier ignores fill
+        <br /> 
+        Click : if point is selected, then move it. If shape is selected, then add new point to shape
+        <br />
+        type fill_linear  = {
+            "type":"fill_linear",
+            "x0" : number, 
+            "y0" : number, 
+            "x1" : number, 
+            "y1" : number, 
+            "colorstops" : [number , string][]   
+         }
+         <br />
+         type fill_radial  = {
+            "type":"fill_radial",
+            "x0" : number, 
+            "y0" : number, 
+            "x1" : number, 
+            "y1" : number, 
+            "r0" : number,
+            "r1" : number,
+            "colorstops" : [number , string][]   
+         }
+         <br />
+         type fill_conic  = {
+            "type":"fill_conic",
+            "x" : number, 
+            "y" : number, 
+            "theta" : number,
+            "colorstops" : [number , string][]   
+         }
+         <br />
+         type fillstyle = string | fill_linear | fill_radial | fill_conic
+         <br />
+         type outline = {"thickness" : number, "color":string}
+<script type="text/javascript" src="lodash.js"></script>
+<script>
+let lst = [];
+let moved_point = undefined; 
+let mouse_loc = [0,0];
+function load(){
+    document.getElementById("bigc").addEventListener("mousemove", function(e){ 
+        mouse_loc = [e.offsetX, e.offsetY];
+    })
+    document.getElementById("bigc").addEventListener("click", function(e){ 
+        click([e.offsetX, e.offsetY]);
+    })
+    document.addEventListener("keydown", function(e){ 
+        console.log(mouse_loc);
+        console.log("got here");
+        keypress( [mouse_loc[0], mouse_loc[1]],e.key);
+    })
+}
+</script>
+
+
+
+</html>

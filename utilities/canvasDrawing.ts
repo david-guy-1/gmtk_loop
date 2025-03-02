@@ -346,7 +346,7 @@ export function d_smoothbezier(points  : point[] | number[], shape : boolean = f
 		for(let i=0; i<points.length; i+=2){
 			p.push([points[i] as number, points[i+1] as number]);
 		}
-		return d_bezier(p)
+		return d_smoothbezier(p)
 	}
 
 	points = points as point[]; 
