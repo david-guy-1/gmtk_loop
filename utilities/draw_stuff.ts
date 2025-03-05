@@ -1,5 +1,5 @@
 
-import { add_com, d_bezier, d_circle, d_line, d_smoothbezier, d_text, drawLine, drawPolygon, dist, flatten, lincomb, draw_wrap, draw_command, drawBezierCurve_command, drawBezierShape_command, drawCircle_command, drawPolygon_command, fillstyle, point3d, displace_command, scale_command, Mv, scalar_multiple } from "./a"
+import { add_com, d_bezier, d_circle, d_line, d_smoothbezier, d_text, drawLine, drawPolygon, dist, flatten, lincomb, draw_wrap, draw_command, drawBezierCurve_command, drawBezierShape_command, drawCircle_command, drawPolygon_command, fillstyle, point3d, displace_command, scale_command, Mv, scalar_multiple, taxicab_dist } from "./a"
 import * as _ from "lodash"
 
 /* zod : 
@@ -458,13 +458,39 @@ function output_draw(d : display_total, ignore_zoom = false) : draw_command[]{
     let shapes = output(d, true);
     let points_dict = d.points.reduce((prev : Record<string ,point>, next :named_point) => { prev[next[0]] = [next[1], next[2]]; return prev} , {}); 
 
+    let visible_points = get_visible_points(d);
     //draw the points 
     if(d.show_points){
-        for(let p of get_visible_points(d)){
-            let selected = d.selected_point == p; 
-            shapes.push(add_com(d_circle(points_dict[p], selected ? 4/d.zoom[2] : 2/d.zoom[2]), {"color": selected ? "red" : "black", "fill":true}));
-            if(d.show_labels){
-                shapes.push(add_com(d_text(p, lincomb(1/d.zoom[2], [4,4],1,points_dict[p])), {"size":15}));
+        for(let l of d.layers){
+            if(d.layer_visibility[l.name] == false){
+                continue; 
+            }
+            for(let s of l.shapes){
+                if(s.visible == false){
+                    continue;
+                }
+                let points_lst : [string, number, number, string][] = []; 
+                for(let [i, p] of s.points.entries()){
+                    points_lst.push([["black", "#666666", "#aaaaaa"][i%3], points_dict[p][0], points_dict[p][1], p]);
+                }
+                if(s.fill && typeof(s.fill) != "string"){
+                    let p = s.fill.p0;
+                    points_lst.push(["#0000ff", points_dict[p][0], points_dict[p][1],p]);
+                    if(s.fill.type != "fill_conic"){
+                        let p = s.fill.p1;
+                        points_lst.push(["#0000ff", points_dict[p][0], points_dict[p][1],p]);
+                    }
+                }
+                for(let [color,x,y,name] of points_lst){
+                    if(!visible_points.has(name)){
+                        continue;
+                    }
+                    let selected = (name == d.selected_point);
+                    shapes.push(add_com(d_circle([x,y], selected ? 4/d.zoom[2] : 2/d.zoom[2]), {"color": selected ? "red" : color, "fill":true}));
+                    if(d.show_labels){
+                        shapes.push(add_com(d_text(name,  lincomb(1/d.zoom[2], [4,4],1,[x,y])), {"color" : "black", "size":15}));
+                    }
+                }
             }
         }
     }
@@ -516,6 +542,10 @@ function get_closest_point(d : display_total, p : point, visible: boolean = true
     let closest = "";
     for(let [name,x,y] of d.points){
         if(check_points == undefined || check_points.has(name)){
+            let tcdist = taxicab_dist(p, [x,y]);
+            if(tcdist > min){
+                continue; // minor optimization
+            }
             let distance = dist(p, [x,y]);
             if(distance < min){
                 min = distance;
@@ -544,6 +574,9 @@ function rename_layer(d : display_total, layer_orig : string, layer_new : string
             delete d.layer_visibility[layer_orig]; 
             if(d.selected_layer == layer_orig){
                 d.selected_layer = layer_new;
+            }
+            for (let shape of layer.shapes){
+                shape.parent_layer = layer_new;
             }
         }
     }
@@ -586,7 +619,16 @@ function add_point_s(d : display_total , layer : string, shape : string, point :
         }
     }
 }
-
+function set_points_s(d : display_total, shape : string, points : string[]){
+    let points_dict = d.points.reduce((prev : Record<string, point>, next : named_point) => { prev[next[0]] = [next[1], next[2]]; return prev} , {}); 
+    
+    for(let point of points){
+        if(points_dict[point] == undefined){
+            throw "no point exists " 
+        }
+    }
+    list_shapes(d)[shape][0].points = points;
+}
 // pop point from shape
 function pop_point_s(d : display_total , layer : string, shape : string){
     if(!selected_shape_visible(d)){
@@ -905,7 +947,7 @@ function redo(){
     display.zoom = zoom;
 }
 
-function change(){
+function change(canvas_only  : boolean = false){
     
 
     history.push(JSON.parse(JSON.stringify(display)));  
@@ -913,7 +955,7 @@ function change(){
         history.shift();
     }
     redo_lst = [] ; 
-    draw_all();
+    draw_all(canvas_only);
 }
 
 function draw_all(canvas_only  : boolean = false ){
@@ -933,7 +975,7 @@ function draw_all(canvas_only  : boolean = false ){
     (document.getElementById("frames") as HTMLDivElement).innerHTML = "<b>LAYER</b><br />"
     for(let [i, layer] of display.layers.entries()){
         (document.getElementById("frames") as HTMLDivElement).innerHTML += `<div ${layer.name
-             == display.selected_layer ? "style=\"background-color:lightblue;\"" : ""}><input type="text" value="${layer.name}" onChange="rename_layer(display, '${layer.name}', arguments[0].target.value);change();" /><button onClick="select_layer(display,'${layer.name}');change();">Select</button>
+             == display.selected_layer ? "style=\"background-color:lightblue;\"" : ""}><input type="text" style="width:110" value="${layer.name}" onChange="rename_layer(display, '${layer.name}', arguments[0].target.value);change();" /><button onClick="select_layer(display,'${layer.name}');change();">Select</button>
 <button onClick="display.layer_visibility['${layer.name}'] = !display.layer_visibility['${layer.name}'] ;change();">${display.layer_visibility[layer.name] ? "vis" : "invis"}</button>${layer.shapes.length}
 <br /><button onClick="shift_lst(display.layers, ${i}, false);change()">up</button>
 <button onClick="shift_lst(display.layers, ${i}, true);change()">down</button>
@@ -995,6 +1037,7 @@ function draw_all(canvas_only  : boolean = false ){
                 (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<button onClick="set_fillstyle(display,'${selected_shape.name}', 'default3');change();">Add conic fillstyle</button>
 <br />`;
             }
+            (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<br /><textarea id=\"points_text\">${JSON.stringify(selected_shape.points)}</textarea><button onClick="try { let x = JSON.parse(document.getElementById('points_text').value); if(window.z.array(window.z.string()).safeParse(x).success == false){throw 'not valid points';}; set_points_s(display,'${selected_shape.name}', x); } catch(e){ display.message = e}; change(); ">Set points</button>`;
             (document.getElementById("frames3") as HTMLDivElement).innerHTML  += "<br />";
 
             for(let [i, point] of selected_shape.points.entries()){
@@ -1042,21 +1085,24 @@ function keypress(point : point, key : string){
     key = key.toLowerCase();
     point = screen_to_world(point, display.zoom);
     display.message = "";
+    let canvas_only = false; 
     if(key == "`"){
         document.getElementById("bigc")!.focus();
+        canvas_only = true; 
     }
     else if(key == "q"){//select point
         let closest = get_closest_point(display, point, true)
         if(closest != ""){
             display.selected_point = closest; 
         }
+        canvas_only = true;
     }
     else if(key == "e"){//unselect point 
         if(display.selected_point == undefined){
             display.selected_shape = undefined;
         }
         display.selected_point = undefined;
-        
+        canvas_only = true;
         
     }
     else if(key == "r"){// add existing point to shape
@@ -1077,7 +1123,7 @@ function keypress(point : point, key : string){
             pop_point_s(display, display.selected_layer, display.selected_shape);
         }
     }
-    else if(key == " "){
+    else if(key == " "){// focus
         let points_dict : Record<string, point> = display.points.reduce((prev :Record<string, point> , curr : named_point) => {prev[curr[0]]= [curr[1], curr[2]]; return prev }, {})
         if(display.selected_shape == undefined){
             return;
@@ -1088,6 +1134,7 @@ function keypress(point : point, key : string){
             let pts = shape.points.map(x => points_dict[x]);
             display.zoom = [_.min(pts.map(x => x[0])) ?? 0, _.min(pts.map(x => x[1])) ?? 0, display.zoom[2]];
         }
+        canvas_only = true;
     }
     // fillstyle points
     else if("zxcv".indexOf(key) != -1){
@@ -1148,7 +1195,7 @@ function keypress(point : point, key : string){
         // nothing changed, don't call change
         return;
     }
-    change(); 
+    change(canvas_only); 
 }
 
 // takes in screen point

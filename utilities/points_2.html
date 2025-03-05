@@ -20,8 +20,8 @@ z(window,window,window,window,window,window,window,window,window,window,window,w
         Canvas not supported
       </canvas>
       <br />
-      <div id="frames" style="position: absolute; top:0px;left:630px;border:1px solid black; height:600px; width:300px" ></div>
-      <div id="frames2" style="position: absolute; top:0px;left:940px;border:1px solid black; height:600px; width:300px" ></div>
+      <div id="frames" style="overflow:scroll;position: absolute; top:0px;left:630px;border:1px solid black; height:600px; width:300px" ></div>
+      <div id="frames2" style="overflow:scroll;position: absolute; top:0px;left:940px;border:1px solid black; height:600px; width:300px" ></div>
       <div id="frames3" style="overflow:scroll; position: absolute; top:0px;left:1250px;border:1px solid black; height:300px; width:300px" ></div>
       <div id="frames4" style="position: absolute; top:304px;left:1250px;border:1px solid black; height:300px; width:300px" >Matrices<br /><textarea id="matrix3">[[1,0,0],[0,1,0],[0,0,1]]</textarea><br /><br /><button onClick="document.getElementById('matrix3').value += '\n[[1,0,x],[0,1,y],[0,0,1]]';">Add translation matrix</button><button onClick="document.getElementById('matrix3').value += '\n[[1,0,0],[0,1,0],[0,0,1]]';">Add identity matrix</button><br />
         layers(separate with "|") <input type="text" id="layer_names"/>
