@@ -1,0 +1,12 @@
+{
+  "compilerOptions" : {
+	"lib":["esnext","es2015", "DOM"],
+  "target": "ESNext",
+  "strict": true,
+  "noUnusedLocals": true,
+  "noUnusedParameters": true,
+  "noFallthroughCasesInSwitch": true,
+  "noUncheckedSideEffectImports": true
+  }
+  
+}

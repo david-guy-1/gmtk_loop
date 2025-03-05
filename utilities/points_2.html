@@ -9,7 +9,10 @@ function define(x,y,z){
 z(window,window,window,window,window,window,window,window,window,window,window,window);
 }
 </script>
-<script type="text/javascript" src="canvasDrawing.js"></script><script type="text/javascript" src="lines.js"></script><script type="text/javascript" src="lodash.js"></script><script type="text/javascript" src="process_draws.js"></script><script type="text/javascript" src="zod.js"></script><script type="text/javascript" src="draw_commands_zod.js"></script><script type="text/javascript" src="draw_stuff.js"></script>
+<script type="text/javascript" src="a.js"></script>
+<script type="text/javascript" src="lodash.js"></script>
+<script type="text/javascript" src="zod.js"></script>
+<script type="text/javascript" src="draw_commands_zod.js"></script>
 </head>
 
 <body onload="load()">
@@ -19,71 +22,214 @@ z(window,window,window,window,window,window,window,window,window,window,window,w
       <br />
       <div id="frames" style="position: absolute; top:0px;left:630px;border:1px solid black; height:600px; width:300px" ></div>
       <div id="frames2" style="position: absolute; top:0px;left:940px;border:1px solid black; height:600px; width:300px" ></div>
-      <div id="frames3" style="position: absolute; top:0px;left:1250px;border:1px solid black; height:600px; width:300px" ></div>
-      <textarea id="data"></textarea><span id="message"></message></span><button onClick="display.selected_shape = undefined; display.selected_point = undefined; change(); "> Unselect all</button>Points display : <select name="cars" id="cars" onChange="display.show_points = arguments[0].target.selectedOptions[0].innerText;change();">
+      <div id="frames3" style="overflow:scroll; position: absolute; top:0px;left:1250px;border:1px solid black; height:300px; width:300px" ></div>
+      <div id="frames4" style="position: absolute; top:304px;left:1250px;border:1px solid black; height:300px; width:300px" >Matrices<br /><textarea id="matrix3">[[1,0,0],[0,1,0],[0,0,1]]</textarea><br /><br /><button onClick="document.getElementById('matrix3').value += '\n[[1,0,x],[0,1,y],[0,0,1]]';">Add translation matrix</button><button onClick="document.getElementById('matrix3').value += '\n[[1,0,0],[0,1,0],[0,0,1]]';">Add identity matrix</button><br />
+        layers(separate with "|") <input type="text" id="layer_names"/>
+    
+        <button onClick="apply_m3('layer')">Apply layer</button><button onClick="apply_m3('shape')">Apply shape</button><button onClick="apply_m3('all')">Apply all</button><button onClick="apply_m3(document.getElementById('layer_names').value.split('|'));">Apply layers</button></div>
+      <div style="position: absolute; top:610px;left:800px;border:1px solid black; height:100px; width:600px" ><div id="point_loc"></div><div id="buttons"><button onClick="undo();draw_all();">Undo</button><button onClick="redo();draw_all();">Redo</button></div><div id="message" > </div></div>
+      <textarea id="data"></textarea><button onClick="display.selected_shape = undefined; display.selected_point = undefined; change(); "> Unselect all</button>Points display : <select name="cars" id="cars" onChange="display.show_points = arguments[0].target.selectedOptions[0].innerText;change();">
         <option >all</option>
         <option >layer</option>
         <option>shape</option>
         <option >none</option>
+      </select>Scroll : <select  id="scroll">
+        <option >screen</option>
+        <option>layer</option>
+        <option >shape</option>
       </select>
-       text goeshere
+      <input type="checkbox" onchange="display.show_labels = arguments[0].target.checked; change();"/>Labels
+      <button onClick="document.getElementById(`bigc`).focus({'focusVisible':true});change();">update</button>
       
-      
-      <br />Q : select point, E : unselect point + shape, R : add existing point to shape, F : pop point from shape, <br />
+      <br />Q : select point, E : unselect point + shape, R : add existing point to shape, F : pop point from shape, `  :focus canvas
+      <br />space : view selected shape, WASD : scroll
+      <br />
+      points for fillstyle : ZX : point1, CV : point2 , Z and C add new point, X and V change existing point
+      <br />
         1 : line, 2 : bezier, 3 : smooth bezier, 4 : polygon, 5 : circle, 6 : bezier shape, 7 : smooth bezier shape
         <br />
         line, bezier and smooth bezier ignores fill
         <br /> 
         Click : if point is selected, then move it. If shape is selected, then add new point to shape
         <br />
-        type fill_linear  = {
+        type point_fill_linear  = {
             "type":"fill_linear",
-            "x0" : number, 
-            "y0" : number, 
-            "x1" : number, 
-            "y1" : number, 
+            "p0" : string,
+            "p1" : string,
             "colorstops" : [number , string][]   
          }
          <br />
-         type fill_radial  = {
+         type point_fill_radial  = {
             "type":"fill_radial",
-            "x0" : number, 
-            "y0" : number, 
-            "x1" : number, 
-            "y1" : number, 
+            "p0" : string,
+            "p1" : string,
             "r0" : number,
             "r1" : number,
             "colorstops" : [number , string][]   
          }
          <br />
-         type fill_conic  = {
+         type point_fill_conic  = {
             "type":"fill_conic",
-            "x" : number, 
-            "y" : number, 
+            "p0" : string,  
             "theta" : number,
             "colorstops" : [number , string][]   
          }
          <br />
-         type fillstyle = string | fill_linear | fill_radial | fill_conic
+         type point_fill = string | point_fill_linear | point_fill_radial | point_fill_conic
          <br />
          type outline = {"thickness" : number, "color":string}
+         <br />
+         commands<textarea id="outputted cmd"></textarea>draw total <textarea id="outputted total"></textarea>import <textarea id="import"></textarea><button onClick="export_();">export</button> <button onclick="import_();">Import</button><br />
+         <div id="import msg"></div>
 <script type="text/javascript" src="lodash.js"></script>
 <script>
 let lst = [];
 let moved_point = undefined; 
 let mouse_loc = [0,0];
+let last_pressed = "";
+let interval = undefined; 
+let ctrl_flag = false; 
 function load(){
+    
     document.getElementById("bigc").addEventListener("mousemove", function(e){ 
         mouse_loc = [e.offsetX, e.offsetY];
+        let world_coords = screen_to_world(mouse_loc, display.zoom)
+        document.getElementById("point_loc").innerHTML = `<button onClick="display.zoom = [0,0,1];change();">Reset zoom</button>screen coord : ${Math.floor(mouse_loc[0])},${Math.floor(mouse_loc[1])} , world coord  ${Math.floor(world_coords[0])},${Math.floor(world_coords[1])}<br /> current zoom : ${[Math.floor(display.zoom[0]), Math.floor(display.zoom[1]), display.zoom[2].toString().substr(0, 5)]}<br /> Current point selected : ${display.selected_point ?? "None"}`
     })
     document.getElementById("bigc").addEventListener("click", function(e){ 
         click([e.offsetX, e.offsetY]);
     })
-    document.addEventListener("keydown", function(e){ 
-        console.log(mouse_loc);
-        console.log("got here");
-        keypress( [mouse_loc[0], mouse_loc[1]],e.key);
+
+    document.getElementById("bigc").addEventListener("keyup", function(e){
+        let key = e.key.toLowerCase();
+        clearInterval(interval);
+        interval=undefined; 
+        last_pressed = "";
     })
+    document.addEventListener("keyup", function(e){
+        
+        let key = e.key.toLowerCase();
+        if(key == "control"){
+            ctrl_flag = false;
+        }
+    })
+    document.addEventListener("keydown", function(e){
+        let key = e.key.toLowerCase();
+        if(key == "`"){
+            document.getElementById("bigc").focus();
+        }
+        if(key == "control"){
+            ctrl_flag = true;
+        }
+    })
+    document.getElementById("bigc").addEventListener("keydown", function(e){ 
+        let key = e.key.toLowerCase();
+        if(key == " "){
+            e.preventDefault();
+        }
+        if(key == 'z' && ctrl_flag){
+            e.preventDefault();
+            undo();
+            draw_all();
+        }
+        if(key == 'y' && ctrl_flag){
+            redo();
+            draw_all();
+        }
+        if(!ctrl_flag){
+            keypress( [mouse_loc[0], mouse_loc[1]],e.key);
+        }
+        if('wasd'.indexOf(key) != -1 && key != last_pressed){
+            let direction = [0,0];
+            if(key == "w"){
+                direction = [0, -1];
+            } 
+            if(key == "a"){
+                direction = [-1, 0];
+            } 
+            if(key == "s"){
+                direction = [0,1];
+            } 
+            if(key == "d"){
+                direction = [1,0];
+            } 
+            clearInterval(interval);
+            console.log("adding interval");
+            let fps = 50;
+            interval = setInterval(function(){
+                let scale_factor = display.zoom[2];
+                //console.log("got here");
+                scroll_key(document.getElementById("scroll").selectedOptions[0].innerText, lincomb(1, [0,0], 600/(scale_factor*(1000/fps)), direction))
+            }, 1000/fps)
+        }
+        last_pressed = key; 
+    })
+
+    document.getElementById("bigc").addEventListener("mousewheel", function(e){ 
+        e.preventDefault();
+        let up = e.deltaY < 0;
+        scroll_wheel( [mouse_loc[0], mouse_loc[1]],up);
+        
+        console.log(display.zoom);
+    })
+
+}
+
+function fillstyle_check(name,text){
+    try{
+        let style = JSON.parse(text)
+        let result = pointFillSchema.safeParse(style)
+        if(result.success){
+            set_fillstyle(display, name, style);
+            change();
+        }  
+        else {
+            document.getElementById("message").innerHTML = "data is invalid";
+        }
+    } catch(e){
+        document.getElementById("message").innerHTML = "data is not valid json";
+    }
+    
+}
+
+function export_(){
+    document.getElementById("outputted cmd").value = JSON.stringify(output(display));
+    document.getElementById("outputted total").value = JSON.stringify(display);
+}
+
+function import_(){
+    try{
+        let disp = JSON.parse(document.getElementById("import").value );
+        
+        let result = displayTotalSchema.safeParse(disp);
+        if(result.success){
+            verify(disp);
+            display = disp;
+            document.getElementById("import msg").innerHTML = "success";
+            change();
+        } else {
+            throw "not valid display total";
+        }
+    } catch(e){
+        document.getElementById("import msg").innerHTML = e;
+    }
+
+}
+function apply_m3(type){ // layer or shape or all
+    try{
+        let mats = document.getElementById("matrix3").value 
+        mats = mats.split("\n").filter(x => x.indexOf("[") != -1).map(x => JSON.parse(x)); 
+        if(_.some(mats, x => matrix3Schema.safeParse(x).success == false)){
+            throw "not valid matrix3";
+        }
+        mats.forEach(x => apply_matrix3(display, x, type));
+        change();
+    } catch(e){
+        document.getElementById("message").innerHTML = e;
+    }
+
+
+
 }
 </script>
 

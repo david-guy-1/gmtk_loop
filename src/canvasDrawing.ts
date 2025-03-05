@@ -337,7 +337,7 @@ export function d_bezier(points  : point[] | number[], shape : boolean = false) 
 
 
 //number of points must be even
-export function d_smoothbezier(points  : point[] | number[], shape : boolean = false) : draw_command[]{
+export function d_smoothbezier(points  : point[] | number[], shape : boolean = false, closed : boolean = false) : draw_command[]{
 	if(typeof(points[0]) == "number"){
 		if(points.length %2 != 0){
 			throw "d_smoothbezier with odd number of numbers";
@@ -358,7 +358,7 @@ export function d_smoothbezier(points  : point[] | number[], shape : boolean = f
 	}
 	// if 10 points: points = 0, 1, 2, 2.5, 3, 4, 4.5, 5, 6, 6.5, 7, 8, (last point is rounded up) 9
 	let bezier_points : point[] = []
-	if(!shape){
+	if(!closed){
 		bezier_points.push(points[0]);
 		bezier_points.push(points[1]);
 		bezier_points.push(points[2]);
@@ -370,7 +370,7 @@ export function d_smoothbezier(points  : point[] | number[], shape : boolean = f
 			i+=2
 		}
 		bezier_points.push(points[i]);
-		return d_bezier(bezier_points, false);
+		return d_bezier(bezier_points, shape);
 	} else {
 		let new_points = JSON.parse(JSON.stringify(points)) as point[];
 		new_points.push(new_points[0])
@@ -386,7 +386,7 @@ export function d_smoothbezier(points  : point[] | number[], shape : boolean = f
 			i+=2
 		}
 		bezier_points.push(lincomb(0.5, new_points[i-1], 0.5, new_points[i]) as point);
-		return d_bezier(bezier_points, true);
+		return d_bezier(bezier_points, shape);
 	}
 }
 

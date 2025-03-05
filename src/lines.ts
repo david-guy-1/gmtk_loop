@@ -1,6 +1,7 @@
 
 type point = [number, number];
 type point3d = [number, number, number];
+type rect = [number, number, number, number];
 
 
 export function flatten<T>(lst : T[][]) : T[] {
@@ -49,6 +50,26 @@ export function move_lst<T>(a : T[] , b : T[]) : T[]{
 	return a;
 }
 
+
+//mutates
+export function shift_lst<T>(lst : T[], n : number, way : boolean){ // true : forwards, false :backwards
+	if(way == false){
+		if(n != 0){
+			let tmp = lst[n-1]
+			let tmp2 = lst[n]
+			lst[n-1] = tmp2;
+			lst[n] = tmp;
+		}
+	}
+	else{
+		if(n != lst.length-1){
+			let tmp = lst[n]
+			let tmp2 = lst[n+1]
+			lst[n+1] = tmp;
+			lst[n] = tmp2;
+		}
+	}
+}
 
 // mutates
 export function combine_obj(obj : Record<string,any>,obj2 : Record<string,any>){
@@ -104,6 +125,37 @@ export function scalar_multiple(a : number, v : number[] ) : number[]  {
 		x[i] = a * v[i];
 	}
 	return x; 
+}
+
+export function matmul(M : number[][], N : number[][] ){	
+	//M[i][j] = row i, column j 
+	// so M.length = number of rows = size of columns
+	// and M[0].length = number of columns = size of rows
+	if(M[0].length != N.length){
+		throw "matrix multiplication with incorrect dimensions"
+	}
+	// number of rows = M's number of rows, number of columns is N's number of columns. 
+	// initialize P
+	let P : number[][] = [];
+	for(let i=0; i < M.length; i++){
+		P.push([]);
+		for(let j=0; j < N[0].length; j++){
+			P[i].push(0);
+		}
+	}
+	for(let rown = 0; rown < M.length; rown ++){
+		for(let coln = 0; coln < N[0].length; coln ++){
+			for(let i=0; i < M[0].length; i++){
+				P[rown][coln] += M[rown][i] * N[i][coln]
+			}
+		}
+	}
+	return P;
+}
+export function Mv(M : number[][], N : number[]){
+	let P = matmul(M, N.map(x => [x]));
+	return flatten(P)
+
 }
 
 export function lincomb(a : number, v : number[], b : number, w : number[] ) : number[]  {
@@ -370,6 +422,7 @@ export function all_combos<T>(x : T[][]) : T[][]{
 	}
 	return out; 
 }
+
 
 export function pointInsideRectangleWH(...args : (number | number[])[]){
     noNaN(arguments as any);

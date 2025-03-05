@@ -69,6 +69,7 @@ flatten(lst : T[][])
 flatten_all(lst : (T | T[])[])
 cell_index(top_left : point, w : number, h : number, amt_per_row : number, x : number, y : number) // grid stuff, see lines.ts comment for more info
 move_lst(a : T[] , b : T[]) // copies data from b to a, mutates a;
+shift_lst(lst : T[], n : number, way : boolean) // swaps an element with the (next/previous) element : true = forwards, false = backwards
 combine_obj(obj : Record<string, any>, obj2 : Record<string, any>) // keys from obj2 are sent to obj
 add_obj(obj : Record<K, V[]>, k : K, v : V) // used when values are lists
 concat_obj(obj : Record<K, V[]>, k : K, v : V[]) // used when values are lists
