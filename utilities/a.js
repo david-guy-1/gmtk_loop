@@ -852,6 +852,16 @@ function move_lst(a, b) {
     }
     return a;
 }
+// finds b in a, then inserts c after it.
+function insert_after(a, b, c) {
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] == b) {
+            a.splice(i + 1, 0, c);
+            break;
+        }
+    }
+    return a;
+}
 //mutates
 function shift_lst(lst, n, way) {
     if (way == false) {
@@ -1952,16 +1962,19 @@ function output_draw(d, ignore_zoom = false) {
                 if (s.visible == false) {
                     continue;
                 }
+                // black darkyellow green  : shape points
+                // selected : red
+                // fillstyle : blue
                 let points_lst = [];
                 for (let [i, p] of s.points.entries()) {
-                    points_lst.push([["black", "#666666", "#aaaaaa"][i % 3], points_dict[p][0], points_dict[p][1], p]);
+                    points_lst.push([["black", "#cccc00", "green"][i % 3], points_dict[p][0], points_dict[p][1], p]);
                 }
                 if (s.fill && typeof (s.fill) != "string") {
                     let p = s.fill.p0;
-                    points_lst.push(["#0000ff", points_dict[p][0], points_dict[p][1], p]);
+                    points_lst.push(["blue", points_dict[p][0], points_dict[p][1], p]);
                     if (s.fill.type != "fill_conic") {
                         let p = s.fill.p1;
-                        points_lst.push(["#0000ff", points_dict[p][0], points_dict[p][1], p]);
+                        points_lst.push(["blue", points_dict[p][0], points_dict[p][1], p]);
                     }
                 }
                 for (let [color, x, y, name] of points_lst) {
@@ -1969,7 +1982,7 @@ function output_draw(d, ignore_zoom = false) {
                         continue;
                     }
                     let selected = (name == d.selected_point);
-                    shapes.push(add_com(d_circle([x, y], selected ? 4 / d.zoom[2] : 2 / d.zoom[2]), { "color": selected ? "red" : color, "fill": true }));
+                    shapes.push(add_com(d_circle([x, y], selected ? 5 / d.zoom[2] : 3 / d.zoom[2]), { "color": selected ? "red" : color, "fill": true }));
                     if (d.show_labels) {
                         shapes.push(add_com(d_text(name, lincomb(1 / d.zoom[2], [4, 4], 1, [x, y])), { "color": "black", "size": 15 }));
                     }
@@ -2060,6 +2073,7 @@ function add_unassociated_point(d, p) {
     d.total_points++;
     return name;
 }
+//add point to selected shape
 function add_point(d, p) {
     if (d.selected_shape == undefined) {
         d.message = "selected shape is not visible";
@@ -2073,10 +2087,16 @@ function add_point(d, p) {
     let name = d.total_points.toString();
     d.points.push([name, p[0], p[1]]);
     d.total_points++;
-    shape.points.push(name);
+    if (shape.insertion_point == undefined) {
+        shape.points.push(name);
+    }
+    else {
+        insert_after(shape.points, shape.insertion_point, name);
+        shape.insertion_point = name;
+    }
     return name;
 }
-// add existing point to shape
+// add existing point to selected shape 
 function add_point_s(d, layer, shape, point) {
     if (!selected_shape_visible(d)) {
         d.message = "selected shape is not visible";
@@ -2086,6 +2106,14 @@ function add_point_s(d, layer, shape, point) {
     if (layer_obj != undefined) {
         let shape_obj = get_shape(layer_obj.shapes, shape);
         if (shape_obj != undefined) {
+            if (shape_obj.insertion_point == undefined) {
+                shape_obj.points.push(point);
+            }
+            else {
+                insert_after(shape_obj.points, shape_obj.insertion_point, point);
+                ;
+                shape_obj.insertion_point = point;
+            }
             shape_obj.points.push(point);
         }
     }
@@ -2238,7 +2266,7 @@ function clone_shape(d, shape_name, add_to_layer = true) {
 // applies to selected shape or layer
 function apply_matrix3(d, mat, scope) {
     // don't question it
-    let points_to_affect = scope == "shape" ? get_points(list_shapes(d)[d.selected_shape ?? Math.random().toString()]?.[0] ?? { type: "line", points: [] }) : (scope == "layer" ? (get_layer(d.layers, d.selected_layer)?.shapes ?? []).reduce((x, y) => { x = x.union(get_points(y)); return x; }, new Set()) : (scope == "all" ? new Set(d.points.map(x => x[0])) : flatten(scope.map(x => get_layer(d.layers, x)?.shapes ?? [])).map(x => get_points(x)).reduce((x, y) => { x = x.union(y); return x; }, new Set())));
+    let points_to_affect = scope == "shape" ? get_points(list_shapes(d)[d.selected_shape ?? Math.random().toString()]?.[0] ?? { type: "line", points: [] }) : (scope == "layer" ? (get_layer(d.layers, d.selected_layer)?.shapes ?? []).reduce((x, y) => { x = x.union(get_points(y)); return x; }, new Set()) : (scope == "all" ? new Set(d.points.map(x => x[0])) : (scope[1] == "layer" ? flatten(scope[0].map(x => get_layer(d.layers, x)?.shapes ?? [])).map(x => get_points(x)).reduce((x, y) => { x = x.union(y); return x; }, new Set()) : new Set(scope[0]))));
     for (let [i, pt] of d.points.entries()) {
         if (points_to_affect.has(pt[0])) {
             let result = Mv(mat, [pt[1], pt[2], 1]);
@@ -2407,7 +2435,7 @@ function draw_all(canvas_only = false) {
     if (canvas_only) {
         return;
     }
-    document.getElementById("data").value = JSON.stringify(display);
+    document.getElementById("outputted total").value = JSON.stringify(display);
     //side stuff
     document.getElementById("frames").innerHTML = "";
     document.getElementById("frames2").innerHTML = "";
@@ -2480,9 +2508,15 @@ function draw_all(canvas_only = false) {
             document.getElementById("frames3").innerHTML += `<br /><textarea id=\"points_text\">${JSON.stringify(selected_shape.points)}</textarea><button onClick="try { let x = JSON.parse(document.getElementById('points_text').value); if(window.z.array(window.z.string()).safeParse(x).success == false){throw 'not valid points';}; set_points_s(display,'${selected_shape.name}', x); } catch(e){ display.message = e}; change(); ">Set points</button>`;
             document.getElementById("frames3").innerHTML += "<br />";
             for (let [i, point] of selected_shape.points.entries()) {
-                document.getElementById("frames3").innerHTML += `${point} (${points_dict[point][0].toString().substring(0, 6)}, ${points_dict[point][1].toString().substring(0, 6)}) <button onClick="display.selected_point = '${point}';change();">Select</button>
- <button onClick="list_shapes(display)['${selected_shape.name}'][0].points.splice(${i},1);display.selected_point=undefined;change();">Pop</button>
-<br />`;
+                document.getElementById("frames3").innerHTML += `<span ${selected_shape.insertion_point == point ? "style=\"background-color:lightblue;\"" : ""}>${point} (${points_dict[point][0].toString().substring(0, 6)}, ${points_dict[point][1].toString().substring(0, 6)}) </span> <button onClick="display.selected_point = '${point}';change();">Select</button>
+ <button onClick="list_shapes(display)['${selected_shape.name}'][0].points.splice(${i},1);display.selected_point=undefined;change();">Pop</button>`;
+                if (point == selected_shape.insertion_point) {
+                    document.getElementById("frames3").innerHTML += `<button onClick="list_shapes(display)['${selected_shape.name}'][0].insertion_point = undefined;change();">Clear</button>`;
+                }
+                else {
+                    document.getElementById("frames3").innerHTML += `<button onClick="list_shapes(display)['${selected_shape.name}'][0].insertion_point = '${point}';change();">Insert</button>`;
+                }
+                document.getElementById("frames3").innerHTML += "<br />";
             }
             document.getElementById("frames3").innerHTML += "</div>";
         }
@@ -2564,6 +2598,12 @@ function keypress(point, key) {
             display.zoom = [_.min(pts.map(x => x[0])) ?? 0, _.min(pts.map(x => x[1])) ?? 0, display.zoom[2]];
         }
         canvas_only = true;
+    }
+    else if (key == "t" && display.selected_point != undefined && display.selected_shape != undefined) {
+        list_shapes(display)[display.selected_shape][0].insertion_point = display.selected_point;
+    }
+    else if (key == "g" && display.selected_shape != undefined) {
+        list_shapes(display)[display.selected_shape][0].insertion_point = undefined;
     }
     // fillstyle points
     else if ("zxcv".indexOf(key) != -1) {

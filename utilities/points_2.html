@@ -24,9 +24,12 @@ z(window,window,window,window,window,window,window,window,window,window,window,w
       <div id="frames2" style="overflow:scroll;position: absolute; top:0px;left:940px;border:1px solid black; height:600px; width:300px" ></div>
       <div id="frames3" style="overflow:scroll; position: absolute; top:0px;left:1250px;border:1px solid black; height:300px; width:300px" ></div>
       <div id="frames4" style="position: absolute; top:304px;left:1250px;border:1px solid black; height:300px; width:300px" >Matrices<br /><textarea id="matrix3">[[1,0,0],[0,1,0],[0,0,1]]</textarea><br /><br /><button onClick="document.getElementById('matrix3').value += '\n[[1,0,x],[0,1,y],[0,0,1]]';">Add translation matrix</button><button onClick="document.getElementById('matrix3').value += '\n[[1,0,0],[0,1,0],[0,0,1]]';">Add identity matrix</button><br />
-        layers(separate with "|") <input type="text" id="layer_names"/>
+        x<input type="text" style="width:50px;" value="0" id="x_v"/>y<input type="text"  value="0" style="width:50px;" id="y_v"/><button onClick="let xv = document.getElementById(`x_v`).value;  let yv = document.getElementById(`y_v`).value;  let el = document.getElementById('matrix3'); el.value = `[[1,0,-${xv}],[0,1,-${yv}],[0,0,1]]\n${el.value}\n[[1,0,${xv}],[0,1,${yv}],[0,0,1]]`;">wrap translation matrix</button>
+        layers/points(separate with "|") <input type="text" id="layer_names"/><br />
     
-        <button onClick="apply_m3('layer')">Apply layer</button><button onClick="apply_m3('shape')">Apply shape</button><button onClick="apply_m3('all')">Apply all</button><button onClick="apply_m3(document.getElementById('layer_names').value.split('|'));">Apply layers</button></div>
+        <button onClick="apply_m3('layer')">Apply layer</button><button onClick="apply_m3('shape')">Apply shape</button><button onClick="apply_m3('all')">Apply all</button><button onClick="apply_m3([document.getElementById('layer_names').value.split('|'),'layer']);">Apply layers</button><button onClick="apply_m3([document.getElementById('layer_names').value.split('|'),'point']);">Apply points</button><br/>
+        <input type="text" id="joiner" /> <button onClick="document.getElementById(`joiner`).value = JSON.parse(document.getElementById(`joiner`).value).join(`|`)">json list to "|"</button>
+        </div>
       <div style="position: absolute; top:610px;left:800px;border:1px solid black; height:100px; width:600px" ><div id="point_loc"></div><div id="buttons"><button onClick="undo();draw_all();">Undo</button><button onClick="redo();draw_all();">Redo</button></div><div id="message" > </div></div>
       <textarea id="data"></textarea><button onClick="display.selected_shape = undefined; display.selected_point = undefined; change(); "> Unselect all</button>Points display : <select name="cars" id="cars" onChange="display.show_points = arguments[0].target.selectedOptions[0].innerText;change();">
         <option >all</option>
@@ -42,7 +45,7 @@ z(window,window,window,window,window,window,window,window,window,window,window,w
       <button onClick="document.getElementById(`bigc`).focus({'focusVisible':true});change();">update</button>
       
       <br />Q : select point, E : unselect point + shape, R : add existing point to shape, F : pop point from shape, `  :focus canvas
-      <br />space : view selected shape, WASD : scroll
+      <br />space : view selected shape, WASD : scroll, T : selection point = insertion point, G = clear insertion
       <br />
       points for fillstyle : ZX : point1, CV : point2 , Z and C add new point, X and V change existing point
       <br />

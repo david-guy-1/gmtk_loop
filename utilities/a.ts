@@ -1100,7 +1100,16 @@ a[i] = b[i]
 return a;
 }
 
-
+// finds b in a, then inserts c after it.
+export function insert_after<T>(a : T[], b : T, c : T) : T[]{
+for(let i=0;  i< a.length ; i++){
+if(a[i] == b){
+a.splice(i+1, 0, c);
+break;
+}
+}
+return a;
+}
 //mutates
 export function shift_lst<T>(lst : T[], n : number, way : boolean){ // true : forwards, false :backwards
 if(way == false){
