@@ -415,6 +415,36 @@ function draw_wrap(lst, c) {
         }
     }
 }
+function fade_wrap(lst, c, callback, color = "black", time = 0.5, size = [1000, 1000]) {
+    // draw black 20 times, then draw the thing 20 times; 
+    let interval = setInterval(function () {
+        this[0]++;
+        if (this[0] == 40) {
+            clearInterval(interval);
+        }
+        if (this[0] < 20) {
+            c.globalAlpha = 0.15;
+            c.beginPath();
+            c.rect(0, 0, size[0], size[1]);
+            c.fillStyle = color;
+            c.fill();
+        }
+        else if (this[0] <= 39) {
+            c.clearRect(0, 0, size[0], size[1]);
+            draw_wrap(lst, c);
+            c.globalAlpha = 1 - 0.05 * (this[0] - 20);
+            c.beginPath();
+            c.rect(0, 0, size[0], size[1]);
+            c.fillStyle = color;
+            c.fill();
+        }
+        else {
+            c.clearRect(0, 0, size[0], size[1]);
+            draw_wrap(lst, c);
+            callback();
+        }
+    }.bind([0]), time * 1000 / 40);
+}
 class img_with_center {
     commands;
     x;
