@@ -953,7 +953,8 @@ let base_display : display_total = {
     selected_layer : "base",
     total_points : 0,
     total_shapes : 0,
-    message : ""
+    message : "",
+    true_points : true
 }
 
 let display = JSON.parse(JSON.stringify(base_display)) as display_total;
