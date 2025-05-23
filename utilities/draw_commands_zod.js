@@ -119,7 +119,7 @@ const shapeTypesSchema = window.z.union([
 
 const shapeSchema = window.z.object({
   parent_layer: window.z.string(),
-  points: window.z.array(window.z.string()),
+  points: window.z.array(window.z.tuple([window.z.string(), window.z.number(), window.z.number()])),
   name: window.z.string(),
   type: shapeTypesSchema,
   fill: window.z.union([window.z.string(), pointFillSchema]).optional(),

@@ -584,8 +584,7 @@ export function draw(lst : draw_command[], c: React.RefObject<HTMLCanvasElement>
 if(c.current == null){
 return;
 }
-//@ts-ignore
-draw_wrap(lst, c.current.getContext('2d'));
+draw_wrap(lst, c.current.getContext('2d')!);
 }
 export function clear(c: React.RefObject<HTMLCanvasElement>){
 if(c.current == null){
@@ -641,6 +640,14 @@ break;
 }
 }
 
+export function fade(lst : draw_command[], c : React.RefObject<HTMLCanvasElement>,  callback : () => void, color : string = "black", time : number = 0.5, size : point = [1000, 1000]){
+if(c.current == null){
+return;
+}
+
+fade_wrap(lst, c.current.getContext('2d')!, callback, color, time, size);
+}
+
 export function fade_wrap(lst : draw_command[], c : CanvasRenderingContext2D,  callback : () => void, color : string = "black", time : number = 0.5, size : point = [1000, 1000]){
 // draw black 20 times, then draw the thing 20 times;
 let interval = setInterval(function(this : [number]){
@@ -649,7 +656,7 @@ if(this[0] == 40){
 clearInterval(interval);
 }
 if(this[0] < 20){
-c.globalAlpha = 0.05;
+c.globalAlpha = 0.15;
 c.beginPath();
 c.rect(0, 0, size[0], size[1]);
 c.fillStyle = color;

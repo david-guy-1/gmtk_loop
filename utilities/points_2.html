@@ -42,6 +42,7 @@ z(window,window,window,window,window,window,window,window,window,window,window,w
         <option >shape</option>
       </select>
       <input type="checkbox" onchange="display.show_labels = arguments[0].target.checked; change();"/>Labels
+	  <input type="checkbox" onchange="display.true_points = arguments[0].target.checked; change();"/>True Points
       <button onClick="document.getElementById(`bigc`).focus({'focusVisible':true});change();">update</button>
       
       <br />Q : select point, E : unselect point + shape, R : add existing point to shape, F : pop point from shape, `  :focus canvas
@@ -53,7 +54,8 @@ z(window,window,window,window,window,window,window,window,window,window,window,w
         <br />
         line, bezier and smooth bezier ignores fill
         <br /> 
-        Click : if point is selected, then move it. If shape is selected, then add new point to shape
+        Click : if point is selected, then move it. If shape is selected, then add new point to shape.<br />
+		Ctrl+click : displace selected point within shape (without moving original point)
         <br />
         type point_fill_linear  = {
             "type":"fill_linear",
@@ -100,7 +102,7 @@ function load(){
         document.getElementById("point_loc").innerHTML = `<button onClick="display.zoom = [0,0,1];change();">Reset zoom</button>screen coord : ${Math.floor(mouse_loc[0])},${Math.floor(mouse_loc[1])} , world coord  ${Math.floor(world_coords[0])},${Math.floor(world_coords[1])}<br /> current zoom : ${[Math.floor(display.zoom[0]), Math.floor(display.zoom[1]), display.zoom[2].toString().substr(0, 5)]}<br /> Current point selected : ${display.selected_point ?? "None"}`
     })
     document.getElementById("bigc").addEventListener("click", function(e){ 
-        click([e.offsetX, e.offsetY]);
+        click([e.offsetX, e.offsetY], ctrl_flag);
     })
 
     document.getElementById("bigc").addEventListener("keyup", function(e){
@@ -201,7 +203,7 @@ function export_(){
 }
 
 function import_(){
-    try{
+  
         let disp = JSON.parse(document.getElementById("import").value );
         
         let result = displayTotalSchema.safeParse(disp);
@@ -213,9 +215,7 @@ function import_(){
         } else {
             throw "not valid display total";
         }
-    } catch(e){
-        document.getElementById("import msg").innerHTML = e;
-    }
+    
 
 }
 function apply_m3(type){ // layer or shape or all

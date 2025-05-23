@@ -106,7 +106,7 @@ type outline = {"thickness" : number, "color":string}
 type shape_types = "line"|"bezier"|"smooth bezier"|"polygon"|"circle"|"bezier shape"|"smooth bezier shape"
 type shape = {
     "parent_layer" : string 
-    "points" : string[] // just the names 
+    "points" : [string, number, number][] // just the names 
     "name":string
     "type": shape_types
     "fill" ?: string|point_fill
@@ -136,6 +136,7 @@ type display_total  = {
     total_points : number  
     total_shapes : number
     message : string 
+    true_points : boolean
 }
 
 function get_layer(layers : layer[], name : string ) : layer| undefined{
@@ -220,7 +221,7 @@ function output(d : display_total, ignore_exceptions = false) : draw_command[]{
             continue;
         }
         for(let shape of layer.shapes){
-            let points : point[] = shape.points.map((x,y,z) => get_point(d.points, x) ?? [0,0])
+            let points : point[] = shape.points.map(([p,o1, o2]) =>lincomb(1, get_point(d.points, p) ?? [0,0], 1, [o1, o2]) as point)
             if(shape.visible == false){
                 continue;
             }
@@ -416,8 +417,9 @@ function output(d : display_total, ignore_exceptions = false) : draw_command[]{
     return result
 }
 //get points of shape
+// TODO: maybe we don't need this function
 function get_points(s : shape) : Set<string>{
-    let set = new Set(s.points)
+    let set = new Set(s.points.map(x => x[0]))
     if(s.fill && typeof(s.fill) != "string"){
         if(s.fill.p0 != undefined){
             set.add(s.fill.p0);
@@ -473,9 +475,18 @@ function output_draw(d : display_total, ignore_zoom = false) : draw_command[]{
                 // black darkyellow green  : shape points
                 // selected : red
                 // fillstyle : blue
+
+                // color, position , name of point (for selection purposes)
                 let points_lst : [string, number, number, string][] = []; 
-                for(let [i, p] of s.points.entries()){
+                for(let [i, [p, o1, o2]] of s.points.entries()){
                     points_lst.push([["black", "#cccc00", "green"][i%3], points_dict[p][0], points_dict[p][1], p]);
+                    if(o1 != 0 || o2 != 0){
+                        if(d.true_points){
+                            // draw true point location 
+                            points_lst.push(["purple", points_dict[p][0]+o1, points_dict[p][1]+o2, p]);
+                            shapes.push(add_com(d_line(points_dict[p], lincomb(1, points_dict[p], 1, [o1, o2])), {"color":"purple"}))
+                        }
+                    }
                 }
                 if(s.fill && typeof(s.fill) != "string"){
                     let p = s.fill.p0;
@@ -507,6 +518,7 @@ function output_draw(d : display_total, ignore_zoom = false) : draw_command[]{
 
 }
 
+// returns (shape, layer)
 function list_shapes(d : display_total) : Record<string, [shape,string]>{
     let x : Record<string, [shape,string]>= {}
     for(let item of d.layers){
@@ -609,9 +621,12 @@ function add_point(d : display_total, p : point){
     d.points.push([name, p[0], p[1]]);
     d.total_points++;
     if(shape.insertion_point == undefined){
-        shape.points.push(name);
+        shape.points.push([name,0,0]);
     } else {
-        insert_after(shape.points, shape.insertion_point, name);
+        let index = shape.points.map(x => x[0]).indexOf(shape.insertion_point);
+        if(index != -1){
+            shape.points.splice(index+1, 0, [name,0,0]);
+        }
         shape.insertion_point = name;
     }
     return name
@@ -628,20 +643,22 @@ function add_point_s(d : display_total , layer : string, shape : string, point :
         let shape_obj = get_shape(layer_obj.shapes, shape);
         if(shape_obj != undefined){
             if(shape_obj.insertion_point == undefined){
-                shape_obj.points.push(point);
+                shape_obj.points.push([point,0,0]);
             } else {
-                insert_after(shape_obj.points, shape_obj.insertion_point, point);;
+                let index = shape_obj.points.map(x => x[0]).indexOf(shape_obj.insertion_point);
+                if(index != -1){
+                    shape_obj.points.splice(index+1, 0, [point,0,0]);
+                }
                 shape_obj.insertion_point = point;
             }
-            shape_obj.points.push(point);
         }
     }
 }
-function set_points_s(d : display_total, shape : string, points : string[]){
+function set_points_s(d : display_total, shape : string, points : [string, number, number][]){
     let points_dict = d.points.reduce((prev : Record<string, point>, next : named_point) => { prev[next[0]] = [next[1], next[2]]; return prev} , {}); 
     
     for(let point of points){
-        if(points_dict[point] == undefined){
+        if(points_dict[point[0]] == undefined){
             throw "no point exists " 
         }
     }
@@ -683,13 +700,13 @@ function set_fillstyle(d : display_total,name : string, data  :  point_fill | un
         return
     }
     if(data == "default1"){
-        data =  { "type":"fill_linear", "p0" : shape.points[0], "p1" :  shape.points[1], "colorstops" : [[0,"blue"], [1, "red"]] }
+        data =  { "type":"fill_linear", "p0" : shape.points[0][0], "p1" :  shape.points[1][0], "colorstops" : [[0,"blue"], [1, "red"]] }
     }
     if(data == "default2"){
-        data =  { "type":"fill_radial", "p0" : shape.points[0], "p1" : shape.points[0], "r0" : 0, "r1" : 100, "colorstops" :  [[0,"blue"], [1, "red"]]}
+        data =  { "type":"fill_radial", "p0" : shape.points[0][0], "p1" : shape.points[0][0], "r0" : 0, "r1" : 100, "colorstops" :  [[0,"blue"], [1, "red"]]}
     }
     if(data == "default3"){
-        data =  { "type":"fill_conic", "p0" : shape.points[0], "theta" : 0, "colorstops" : [[0,"blue"], [1, "red"]] }
+        data =  { "type":"fill_conic", "p0" : shape.points[0][0], "theta" : 0, "colorstops" : [[0,"blue"], [1, "red"]] }
     }
     shape.fill = data;
 }
@@ -730,7 +747,7 @@ function add_new_shape(d : display_total, layer : string,type : shape_types , p 
         new_point = add_point(d, p) ?? "";
     } else {
         new_point = d.selected_point;
-        shape.points.push(new_point);
+        shape.points.push([new_point,0,0]);
     }
     d.selected_point = undefined
     return name;
@@ -776,7 +793,7 @@ function clone_shape(d : display_total, shape_name : string, add_to_layer : bool
             }
             // clone the points
             for(let [i, p] of new_shape.points.entries()){
-                new_shape.points[i] = add_unassociated_point(d, points_dict[p]);
+                new_shape.points[i] = [add_unassociated_point(d, points_dict[p[0]]),p[1], p[2]] ;
             }
             if(new_shape.fill && typeof(new_shape.fill) != "string"){
                 new_shape.fill.p0 = add_unassociated_point(d, points_dict[new_shape.fill.p0]);
@@ -1055,11 +1072,11 @@ function draw_all(canvas_only  : boolean = false ){
                 (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<button onClick="set_fillstyle(display,'${selected_shape.name}', 'default3');change();">Add conic fillstyle</button>
 <br />`;
             }
-            (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<br /><textarea id=\"points_text\">${JSON.stringify(selected_shape.points)}</textarea><button onClick="try { let x = JSON.parse(document.getElementById('points_text').value); if(window.z.array(window.z.string()).safeParse(x).success == false){throw 'not valid points';}; set_points_s(display,'${selected_shape.name}', x); } catch(e){ display.message = e}; change(); ">Set points</button>`;
+            (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<br /><textarea id=\"points_text\">${JSON.stringify(selected_shape.points)}</textarea><button onClick="try { let x = JSON.parse(document.getElementById('points_text').value); if(window.z.array(window.z.tuple([window.z.string(),window.z.number(), window.z.number()])).safeParse(x).success == false){throw 'not valid points';}; set_points_s(display,'${selected_shape.name}', x); } catch(e){ display.message = e}; change(); ">Set points</button>`;
             (document.getElementById("frames3") as HTMLDivElement).innerHTML  += "<br />";
 
-            for(let [i, point] of selected_shape.points.entries()){
-                (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<span ${selected_shape.insertion_point == point ? "style=\"background-color:lightblue;\"" : ""}>${point} (${points_dict[point][0].toString().substring(0,6)}, ${points_dict[point][1].toString().substring(0,6)}) </span> <button onClick="display.selected_point = '${point}';change();">Select</button>
+            for(let [i, [point, o1, o2]] of selected_shape.points.entries()){
+                (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<span ${selected_shape.insertion_point == point ? "style=\"background-color:lightblue;\"" : (display.selected_point == point ? "style=\"background-color:lightgreen;\"" : "")}>${point} (${points_dict[point][0].toString().substring(0,6)}, ${points_dict[point][1].toString().substring(0,6)}) </span> <button onClick="display.selected_point = '${point}';change();">Select</button>
  <button onClick="list_shapes(display)['${selected_shape.name}'][0].points.splice(${i},1);display.selected_point=undefined;change();">Pop</button>`
                 if(point == selected_shape.insertion_point){
                     (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<button onClick="list_shapes(display)['${selected_shape.name}'][0].insertion_point = undefined;change();">Clear</button>`
@@ -1084,12 +1101,30 @@ function world_to_screen (p : point, factor : point3d): point{
     return [(p[0] - factor[0]) * factor[2],(p[1] - factor[1]) * factor[2]]
 }
 
-function click(point : point){
+function click(point : point, control_flag = false){
     point = screen_to_world(point, display.zoom);
     
     // move a point
     if(display.selected_point != undefined){
-        move_point(display, display.selected_point, point);
+        if(control_flag == false){ 
+            move_point(display, display.selected_point, point);
+        } else {
+            // displace without moving
+            let base_point = get_point(display.points, display.selected_point)
+            if(base_point == undefined){
+                return;
+            }
+            let shape = list_shapes(display)[display.selected_shape ?? "adjlkadjaklsdjaslkdj"]
+            if(shape == undefined){
+                return;
+            }
+            let index = shape[0].points.map(x => x[0]).indexOf(display.selected_point);
+            if(index == -1){
+                return undefined;
+            }
+            shape[0].points[index][1]= lincomb(1, point, -1, base_point)[0];
+            shape[0].points[index][2]= lincomb(1, point, -1, base_point)[1];
+        }
     }
     // add a point
     if(display.selected_shape != undefined && display.selected_point == undefined){
@@ -1118,7 +1153,6 @@ function keypress(point : point, key : string){
         if(closest != ""){
             display.selected_point = closest; 
         }
-        canvas_only = true;
     }
     else if(key == "e"){//unselect point 
         if(display.selected_point == undefined){
@@ -1137,7 +1171,7 @@ function keypress(point : point, key : string){
         if(closest != ""){
             if(display.selected_shape != undefined){
                 let [shape, layer] = list_shapes(display)[display.selected_shape];
-                shape.points.push(closest);
+                shape.points.push([closest,0,0]);
             }
         }
     }
@@ -1154,7 +1188,7 @@ function keypress(point : point, key : string){
         let shape = list_shapes(display)[display.selected_shape]?.[0];
 
         if(shape != undefined){
-            let pts = shape.points.map(x => points_dict[x]);
+            let pts = shape.points.map(x => points_dict[x[0]]);
             display.zoom = [_.min(pts.map(x => x[0])) ?? 0, _.min(pts.map(x => x[1])) ?? 0, display.zoom[2]];
         }
         canvas_only = true;
