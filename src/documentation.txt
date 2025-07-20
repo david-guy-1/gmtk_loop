@@ -69,38 +69,51 @@ flatten(lst : T[][])
 flatten_all(lst : (T | T[])[])
 cell_index(top_left : point, w : number, h : number, amt_per_row : number, x : number, y : number) // grid stuff, see lines.ts comment for more info
 move_lst(a : T[] , b : T[]) // copies data from b to a, mutates a;
+shift_lst(lst : T[], n : number, way : boolean) // swaps an element with the (next/previous) element : true = forwards, false = backwards
 combine_obj(obj : Record<string, any>, obj2 : Record<string, any>) // keys from obj2 are sent to obj
 add_obj(obj : Record<K, V[]>, k : K, v : V) // used when values are lists
 concat_obj(obj : Record<K, V[]>, k : K, v : V[]) // used when values are lists
 noNaN(lst : any[])
 lerp(start : number[], end : number[], t : number) // t * start + (1-t) * end
+scalar_multiple(a : number, v : number[])
 lincomb(a : number, v : number[], b : number, w : number[]) // a*v + b*w
+unit_vector(angle : number) // cos(x), sin(x)
 num_diffs(x : T[], y : T[])// number of differences
-len(v : number[])// vector magnitude
-moveTo(v : number[], w : number[], dist_ : number) // start at v, move dist towards w. If d(v, w) <= dist , just return w. 
+len(v : number[])// vector magnitude (NOT number of elements)
+moveTo(v : number[], w : number[], dist_ : number) // start at v, move dist towards w. If d(v, w) <= dist , just return w. - always makes a new copy, never returns a reference to originals 
+taxicab_dist(v : number[], w : number[]) // taxicab distance
+inf_norm(v : number[], w : number[]) // l^infinity norm
 dist(v : number[], w : number[]) // d(v, w) - euclidean distance
 cross(a : number[], b : number[]) // cross product
 dot(a : number[], b : number[]) // dot product
-rescale(source_start : number, source_end : number, dest_start : number, dest_end : number, value : number) // rescale intervals 
+rescale(source_start : number, source_end : number, dest_start : number, dest_end : number, value : number) // rescale intervals : consider the linear function that sends source_start to target_start, and source_end to target_end. return f(value)
 normalize(v : number[], amt : number) // normalize vector 
-point_to_color(n : point3d) 
-number_to_hex(n : number)
+latlong_to_xyz(lat : number, long : number) // x = left/right, y = up/down, z = forwards/backwards, lat/long starts at right (1,0,0) and lat goes up (positive y), long goes forwards (positive z) (so positive x is prime meridian)
+xyz_to_latlong(x : number, y : number, z : number)
+move3d(x : number, y : number, z : number, lat : number, long : number, dist : number) // move a point in a direction and amount
+point_to_color(n : point3d)  // returns a string : rgb(a,b,c)
+number_to_hex(n : number) // hexadecimal string, lowercase, zero is empty string 
+get_keys(s : Set<string>, obj : any) // - mutates s, adds (recursively) all the keys in obj, and any subchildren, and so on. 
+json_alphabetical(obj : any) // JSON.stringify, but in alphabetical order
 all_choices(x : T[], amt : number) // binomial coefficient
 all_combos(x : T[][]) // cartesian product
 pointInsideRectangleWH(args : (number | number[])[]) // x, y, tlx, tly, width, height
 pointInsideRectangleTL(args : (number | number[])[]) // x, y, tlx, tly, brx, bry
-vector_angle(v1 : point, v2 : point)
+vector_angle(v1 : point, v2 : point) //angle between two vectors - acos(v1 . v2), both normalized 
 moveInsideRectangleWH(args : (number | number[])[]) // x, y, tlx, tly, width, height
 moveInsideRectangleTL(args : (number | number[])[]) // x, y, tlx, tly, brx, bry
 max(x : number[])
-getIntersection(line1 : point3d, line2 : point3d)
-pointToCoefficients(args : (number | number[])[])// p1x, p1y, p2x , p2y
-between(x : number, b1 : number, b2 : number)
-doLinesIntersect(args : (number | number[])[]) // p1x, p1y, p2x, p2y, q1x, q1y, q2x, q2y = 8 numbers, representing 4 points, representing two lines 
-pointInsidePolygon(x : number, y : number, points : [number, number][])
-getLineEndWH(args : (number | number[])[]) // a line (given by 2 points) and a rectangle 
+getIntersection(line1 : point3d, line2 : point3d) // lines are of the form ax+by=c, throws if they're too close to parallel
+pointToCoefficients(args : (number | number[])[])// p1x, p1y, p2x , p2y -> returns a, b, c such that it's ax+by=c
+pointClosestToLine(args : (number | number[])[]) // [x,y] : point, [a,b,c] : line, returns the point closest to the line, and the distance to the line.
+pointClosestToSegment(args : (number | number[])[]) // [x,y] : point, [px, py, qx, qy] : line segment - same as pointClosestToLine, but with a line segment instead.
+between(x : number, b1 : number, b2 : number) //x between b1 and b2 (inclusive) b1 > b2 or b1 < b2 are both ok
+doLinesIntersect(args : (number | number[])[]) // p1x, p1y, p2x, p2y, q1x, q1y, q2x, q2y = 8 numbers, representing 4 points, representing two lines - intersection must be between endpoints 
+move_wall(point : point, walls : [number, number, number, number][], target : point, amt : number, epsilon : number) // walls are given as line segments : start at the given point, and move towards the target, stopping epsilon before the first wall, or towards target if there is no wall.
+pointInsidePolygon(x : number, y : number, points : [number, number][]) // raycasts , counts intersections
+getLineEndWH(args : (number | number[])[]) // a line (given by 2 points) and a rectangle  : p1x, p1y, p2x, p2y, tlx, tly, width, height - p1 is inside rectangle, and p2 is outside , returns the point on the line [p1, p2] that touches the edge of the rectable.
 getLineEndBR(args : (number | number[])[])
-bfs(neighbors: (vertex: T) => T[], u: T): T[] ; // bfs, where neighbors is given as an oracle function, halting condition is also given
+bfs(neighbors : (vertex: T) => T[], u : T, halting_condition ?: (vertex: T) => boolean): T[] ; // bfs, where neighbors is given as an oracle function, returns the list of visited nodes. If halting condition is given, then stop the search as soon as a vertex satisfying the condition is found (that vertex is included)
 corners(tlx : number, tly : number, width : number, height : number, angle : number)
 
 --

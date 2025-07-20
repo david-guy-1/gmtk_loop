@@ -122,8 +122,9 @@ export function displace_command(command : draw_command, amt : point) : draw_com
                 }
             }
         break;
+        case "drawText":
         case "drawCircle":
-            new_command = new_command as drawCircle_command;
+            new_command = new_command as drawCircle_command | drawText_command;
             new_command.x+= amt[0] 
             new_command.y+= amt[1] 
         break;
@@ -219,6 +220,11 @@ export function scale_command(command : draw_command, center : point, x_amt : nu
                     }
                 }
             }
+        break;
+        case "drawText":
+            new_command = new_command as drawText_command; 
+            new_command.x = scale_number(new_command.x, center[0], x_amt);
+            new_command.y = scale_number(new_command.y, center[1], y_amt);
         break;
         case "drawCircle": // converted into drawEllipse
             var command_c : draw_command = {type:"drawEllipseCR", cx  : command.x, cy : command.y , rx : command.r, ry : command.r, color : command.color, transparency : command.transparency, start : command.start, end : command.end }
@@ -317,8 +323,9 @@ export function rotate_command(command : draw_command, origin : point, amt : num
                 new_command.curves.push([q1[0], q1[1], q2[0], q2[1], q3[0], q3[1]]) ;
             }
         break;
+        case "drawText":
         case "drawCircle":
-            new_command = new_command as drawCircle_command;
+            new_command = new_command as drawCircle_command | drawText_command;
             [new_command.x,new_command.y] = rotate([command.x, command.y], origin, amt); 
         break;
         case "drawEllipse": // all ellipses are converted into CR format 

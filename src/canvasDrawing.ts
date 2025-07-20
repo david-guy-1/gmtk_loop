@@ -1,6 +1,6 @@
 // put this into get_type.py, enter "DONE" (no quotes).
 
-import { add_obj, combine_obj, flatten, flatten_all, noNaN, normalize } from "./lines";
+import { add_obj, combine_obj, flatten, flatten_all, lincomb, noNaN, normalize } from "./lines";
 
 
 
@@ -333,6 +333,61 @@ export function d_bezier(points  : point[] | number[], shape : boolean = false) 
 		output.push({"type":"drawBezierShape", x : points[0][0], y : points[0][1], curves : curves}); 
 	}
 	return output; 
+}
+
+
+//number of points must be even
+export function d_smoothbezier(points  : point[] | number[], shape : boolean = false, closed : boolean = false) : draw_command[]{
+	if(typeof(points[0]) == "number"){
+		if(points.length %2 != 0){
+			throw "d_smoothbezier with odd number of numbers";
+		}
+		let p : point[] = [];
+		for(let i=0; i<points.length; i+=2){
+			p.push([points[i] as number, points[i+1] as number]);
+		}
+		return d_bezier(p)
+	}
+
+	points = points as point[]; 
+	if(points.length % 2 != 0 ){
+		throw  "d_smoothbezier : number of points must be even ";
+	}
+	if(points.length <=3 ){
+		return [];
+	}
+	// if 10 points: points = 0, 1, 2, 2.5, 3, 4, 4.5, 5, 6, 6.5, 7, 8, (last point is rounded up) 9
+	let bezier_points : point[] = []
+	if(!closed){
+		bezier_points.push(points[0]);
+		bezier_points.push(points[1]);
+		bezier_points.push(points[2]);
+		let i=3;
+		while(i <= points.length-2){
+			bezier_points.push(lincomb(0.5, points[i-1], 0.5, points[i]) as point);
+			bezier_points.push(points[i]);
+			bezier_points.push(points[i+1]);
+			i+=2
+		}
+		bezier_points.push(points[i]);
+		return d_bezier(bezier_points, shape);
+	} else {
+		let new_points = JSON.parse(JSON.stringify(points)) as point[];
+		new_points.push(new_points[0])
+		new_points.push(new_points[1])
+		bezier_points.push(lincomb(0.5, new_points[0], 0.5, new_points[1]) as point);
+		bezier_points.push(points[1]);
+		bezier_points.push(points[2]);
+		let i=3;
+		while(i <= points.length){
+			bezier_points.push(lincomb(0.5, new_points[i-1], 0.5, new_points[i]) as point);
+			bezier_points.push(new_points[i]);
+			bezier_points.push(new_points[i+1]);
+			i+=2
+		}
+		bezier_points.push(lincomb(0.5, new_points[i-1], 0.5, new_points[i]) as point);
+		return d_bezier(bezier_points, shape);
+	}
 }
 
 

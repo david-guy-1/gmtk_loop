@@ -1,9 +1,15 @@
 <html>
 
 <head>
-<script type="text/javascript" src="draw.js"></script>
 
-
+<script type="text/javascript">
+// workaround to get tsc output to work
+//// canvasDrawing, process_draws, lines  - ts to js, remove all "export"
+function define(x,y,z){
+z(window,window,window,window,window,window,window,window,window,window,window,window);
+}
+</script>
+<script type="text/javascript" src="canvasDrawing.js"></script><script type="text/javascript" src="lines.js"></script><script type="text/javascript" src="lodash.js"></script><script type="text/javascript" src="process_draws.js"></script>
 </head>
 
 <body onload="load()">
@@ -23,6 +29,8 @@
 			<option value="polygon">polygon</option>
 			<option value="bezier">bezier</option>
 			<option value="bezier shape">bezier shape</option>
+			<option value="smooth bezier">smooth bezier</option>
+			<option value="smooth bezier shape">smooth bezier shape</option>
 			</select> Circles <input type="checkbox" id="circle_check" onChange="draw()" checked=true/>Numbers <input type="checkbox" id="number_check" onChange="draw()" checked=true/>
     </td><td>
         .......
@@ -136,7 +144,7 @@ function draw(){
 			}
 			commands = commands.concat(d_bezier(lst2, false).map(x => add_com(x, {"color":"#330000"})));
 			break;
-		case "bezier shape":
+        case "bezier shape":
 			if(points.length == 0){
 				return;
 			}
@@ -146,6 +154,27 @@ function draw(){
 			}
 			commands = commands.concat(d_bezier(lst2, true).map(x => add_com(x, {"color":"#330000"})));
 		break;
+		case "smooth bezier":
+			if(points.length == 0){
+				return;
+			}
+			var lst2 = [...points];
+			while(lst2.length % 2  != 0){
+				lst2.pop();
+			}
+			commands = commands.concat(d_smoothbezier(lst2, false).map(x => add_com(x, {"color":"#330000"})));
+		break;
+        case "smooth bezier shape":
+			if(points.length == 0){
+				return;
+			}
+			var lst2 = [...points];
+			while(lst2.length % 2  != 0){
+				lst2.pop();
+			}
+			commands = commands.concat(d_smoothbezier(lst2, true).map(x => add_com(x, {"color":"#330000"})));
+			break;
+
 	}
 	draw_wrap(commands, c);
     document.getElementById('text').value = JSON.stringify(lst)

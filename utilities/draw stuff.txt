@@ -1,0 +1,18 @@
+psl : point shape layer - this doesn't work well with gimp, keep that in mind 
+
+can be used alongside gimp for static drawings, but if animations/rotations are needed, don't use with gimp
+
+points are just points, add them by clicking, move with Q - are not attached to any layer
+
+shapes : can be line, bezier, smooth bezier, polygon, circle, bezier shape, smooth bezier shape,  - have names and must be unique 
+
+a point cannot be deleted unless all shapes associated with it are also deleted
+
+outline is optional, fill is optional (but must have at least one)
+
+Q to select existing points, click to add new points
+
+layers are just groups of shapes,  - have names
+
+can hide/show layers - all layers are shown by default. points that are not associated with any shape in a visible layer are hidden, but unbound points (points that are not assicated to any shape at all) are visible by toggle .
+
