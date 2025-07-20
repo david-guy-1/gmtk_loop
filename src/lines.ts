@@ -1,3 +1,5 @@
+import { initial } from "lodash";
+
 
 type point = [number, number];
 type point3d = [number, number, number];
@@ -798,3 +800,326 @@ export function bfs<T>(neighbors: (vertex: T) => T[], u: T, halting_condition ?:
 		return cornersLst
 	}
 	
+
+type ordered_field<T> = {
+	"add" : (a : T, b : T) => T
+	"mul" : (a : T, b : T) => T
+	"zero" : () => T
+	"one" : () => T
+	"ai" : (a : T )=> T
+	"mi" : (a : T) => T
+	"lt" : (a : T, b : T )=> boolean
+	"leq" : (a : T, b : T) => boolean
+	"eq" : (a : T, b : T) => boolean 
+}
+
+// max cx : Ax <= b, x >= 0
+//WARNING: mutates all inputs (except obs)
+
+let default_op : ordered_field<number> = {
+	"add" : (x,y) => x+y,
+	"mul" : (x,y) => x*y,
+	"zero" : () => 0,
+	"one" : () => 1,
+	"ai" : (x) => -x,
+	"mi" : (x) => 1/x,
+	"lt" : (x,y) => x<y,
+	"leq" : (x,y) => x <= y,  
+	"eq" : (x, y) => x == y
+}
+/*
+let fractions_op  = {
+	"add" : (x,y) => x.add(y),
+	"mul" : (x, y) => x.mul(y),
+	"zero": () => new Fraction(0, 1),
+	"one": () => new Fraction(1, 1),
+	"ai" : (x) => x.neg(),
+	"mi" : (x) => x.inverse(),
+	"lt" : (x,y) => x.lt(y),
+	"leq"  : (x,y) => x.lte(y),
+	"eq" : (x , y) => x.equals(y)
+}
+
+function convert(arg ){
+	for(let i=0 ; i< arg.length; i++){
+		if(Array.isArray(arg[i])){
+			convert(arg[i])
+		} else {
+			arg[i] = new Fraction(arg[i]);
+		}
+	}
+	return arg
+}
+
+function unconvert(arg ){
+	if(!Array.isArray(arg)){
+		return arg;
+	}
+	for(let i=0 ; i< arg.length; i++){
+		if(Array.isArray(arg[i])){
+			unconvert(arg[i])
+		} else {
+			try { 
+				arg[i] = arg[i].toFraction()
+			} catch(e){
+
+			}
+		}
+	}
+	return arg
+}
+*/
+
+function simplex_pivot_op<T> (ops : ordered_field<T>, entering_index : number, leaving_index : number, zero_vars : string[] ,nonzero_vars : string[], eqns : T[][]){
+	let {add, mul, zero, one, ai, mi, lt, leq} = ops; 
+	// now we need to change eqns (objective function doesn't change) 
+	// recall eqns : nonzero var = coefficients * zero vars + constant 
+	let entering_variable = zero_vars[entering_index];
+	let leaving_variable = nonzero_vars[leaving_index];
+	let leaving_row = eqns[leaving_index]; 
+	let coef = leaving_row.splice(entering_index, 1)[0];
+	leaving_row.splice(leaving_row.length-1, 0, ai(one()))
+	for(let i=0; i < leaving_row.length; i++){
+		leaving_row[i] = mul(leaving_row[i] , mi(ai(coef))); 
+	}
+	// now we have an equation for entering_variable in terms of other variables 
+	// adjust the other rows
+	for(let i=0; i < eqns.length; i++){
+		if(i == leaving_index){
+			continue; 
+		}
+		let row = eqns[i];
+		let coef = row.splice(entering_index, 1)[0];
+		row.splice(row.length-1, 0, zero());
+		for(let j=0; j < row.length; j++){
+			row[j] = add(row[j], mul(coef, leaving_row[j])); 
+		}
+	}
+	zero_vars.splice(entering_index, 1);
+	zero_vars.push(leaving_variable);
+	nonzero_vars.splice(leaving_index, 1);
+	nonzero_vars.push(entering_variable);
+
+}
+
+function simplex_it<T>(ops : ordered_field<T>, names : string[] , zero_vars : string[], nonzero_vars : string[], eqns : T[][], obj : (T | "large")[] , desired_enter : string | undefined = undefined ) : ["optimal", [T,T], T[]] | "unbounded" | "unbounded large" | "continue" {
+// does one iteration of the simplex algorithm , mutates inputs 
+
+// every nonzero var is a constant + something involving only zero vars 
+// zero vars union nonzero vars = names , 	
+// matrix coefficients : every row is a nonzero var, as in the order in the nonzero_vars list, every number is a coefficient , as in the zero_vars list. the last entry is the constant.
+
+// assume all coefficients are >= 0 
+
+
+// obj uses the names list
+
+// do error checking 
+let {add, mul, zero, one, ai, mi, lt, leq, eq} = ops; 
+
+// choose entering variable - a zero var to make nonzero
+
+	let entering_variable : string | undefined = undefined;
+	let best_choice = [zero(), zero()];
+	for(let [i, candidate] of zero_vars.entries()){
+		// compute how much the objective will increase if we increase this zero variable 
+		let direct_amt = obj[names.indexOf(candidate)];
+		let coef : [T,T] = [zero(), zero()];
+		if(direct_amt == "large"){ // "large" = a large NEGATIVE number 
+			coef = [zero(), ai(one())] // but coefficients represent it as a POSITIVE number
+		} else {
+			coef = [ direct_amt, zero()];
+		}
+
+		for(let [j, row] of eqns.entries()){
+			// increasing the candidate will also change nonzero var[j] by row[i]
+			let term = obj[names.indexOf(nonzero_vars[j])]
+			if(term != "large"){
+				coef[0] = add(coef[0], mul(row[i] ,term ))
+			} else {
+				coef[1] = add(coef[1], mul(row[i] ,ai(one()) ))
+			}
+
+		}
+		
+		if(lt(zero(), coef[1]) || ( eq(zero(), coef[1]) && lt(zero(), coef[0])) ){ // coefficient > 0 
+			if(entering_variable == undefined || lt(best_choice[1], coef[1]) || (eq(best_choice[1], coef[1]) && lt(best_choice[0], coef[0])) ){
+				entering_variable = candidate
+				best_choice = coef;
+			}
+		}
+		if(candidate == desired_enter){
+			if(lt(coef[1], zero()) || (eq(coef[1], zero()) && lt(coef[0], zero()))){
+				throw "desired entering variable cannot be an entering variable"
+			}
+			else {
+				entering_variable = candidate
+				best_choice = coef;
+			}
+		}
+	}
+	
+	if(entering_variable == undefined){
+		let opt_result : T[] = [];
+		for(let item of names){
+			if(nonzero_vars.indexOf(item) == -1){
+				opt_result.push(zero())
+			} else {
+				let row = eqns[nonzero_vars.indexOf(item)]
+				opt_result.push(row[row.length-1])
+			}
+		}
+		let sum = zero()
+		let largesum = zero()
+		for(let i=0; i < names.length; i++){
+			let obj_coef = obj[i]
+			if(obj_coef != "large"){
+				sum = add(sum, mul(opt_result[i], obj_coef));
+			} else {
+				largesum = add(largesum, mul(opt_result[i], ai(one())));
+			}
+		}
+		return ["optimal", [sum, largesum], opt_result];
+	}
+
+	let entering_index = zero_vars.indexOf(entering_variable); 
+	let smallest : T | undefined = undefined;
+	let leaving_variable : string | undefined = undefined
+	// choose the leaving variable (nonzero to make zero)
+	for(let i=0; i < eqns.length; i++){
+		
+		let row = eqns[i];
+		if(leq( zero(), row[entering_index])){
+			
+			continue ; // this row will not be a problem 
+		}
+		let limit = mul(ai(row[row.length-1] ), mi(row[entering_index]));
+		
+		if(smallest == undefined || leq(limit, smallest)){
+			leaving_variable = nonzero_vars[i];
+			smallest = limit; 
+		} 
+	}
+	if(smallest == undefined || leaving_variable == undefined){
+		// check the current position for large values
+		let large = zero();
+		for(let [i, item] of names.entries()){
+			if(zero_vars.indexOf(item) != -1){
+				continue;
+			}
+			if(obj[i] != "large"){
+				continue;
+			}
+			large = add(large, eqns[nonzero_vars.indexOf(item)][eqns[0].length-1]);
+		}
+		if(!eq(large, zero())){
+			return "unbounded large";
+		}
+		return "unbounded";
+	}
+	let leaving_index = nonzero_vars.indexOf(leaving_variable); 
+	simplex_pivot_op(ops, entering_index, leaving_index,zero_vars, nonzero_vars, eqns);
+	
+	let moved_row = eqns.splice(leaving_index, 1);
+	eqns.push(moved_row[0]);
+	return "continue"; 
+}
+
+
+export function simplex<T>(ops : ordered_field<T>, A : T[][], b : T[], ca : T[]) : [T, T[]] | "unbounded" | "infeasible"{
+	let num_vars = A[0].length;
+	let num_cons = A.length; 
+	if(ca.length != num_vars ){
+		throw "c.length must equal number of variables";
+	}
+	if(b.length != num_cons){
+		throw "b.length must equal number of constraints";
+	}
+
+	let {add, mul, zero, one, ai, mi, lt, leq, eq} = ops; 
+	// clone A, b, c
+	A = [...A]
+	for(let i=0; i < A.length; i++){
+		A[i] = [...A[i]]
+	}
+	b = [...b]
+	ca = [...ca]
+	let c = ca as (T | "large")[]
+	let names : string[] = []
+	for(let i=0; i < num_vars; i++){
+		names.push("x" + i);
+	}	
+
+	//  add slack variables	
+	for(let i=0; i < num_cons; i++){
+		names.push("slack" + i);
+		c.push(zero())
+		for(let row=0; row < num_cons; row++){
+			if(row == i){
+				A[row].push(one());
+			} else { 
+				A[row].push(zero())
+			}
+		}
+	}
+	// negate every row with a negative b
+	for(let i=0; i < num_cons ; i++){
+		if(lt(b[i], zero())){
+			let row = A[i] 
+			b[i] = ai(b[i]); 
+			for(let j=0; j < row.length; j++){
+				row[j] = ai(row[j]);
+			}
+		}
+	}
+	// add "initial slack" variables and start the simplex algorithm
+	for(let i=0; i < num_cons; i++){
+		names.push("initial slack" + i);
+		c.push('large')
+		for(let row=0; row < num_cons; row++){
+			if(row == i){
+				A[row].push(one());
+			} else { 
+				A[row].push(zero())
+			}
+		}
+	}
+	// the zero vars are the "old" variables and the nonzero vars are the "new" variables
+	let zero_vars : string[] = []
+	let nonzero_vars : string[]= []
+	for(let var_ of names){
+		if(var_.indexOf("initial slack") != -1){
+			nonzero_vars.push(var_);
+		} else {
+			zero_vars.push(var_);
+		}
+	}
+	let eqns : T[][]= []
+	for(let i=0; i < nonzero_vars.length; i++){
+		eqns.push([])
+		for(let j=0; j < zero_vars.length; j++){
+			eqns[eqns.length-1].push(ai(A[i][j]))
+		}
+		eqns[eqns.length-1].push(b[i]); 
+	}
+
+	while(true){
+		let result = simplex_it(ops, names, zero_vars, nonzero_vars, eqns, c);
+		if(result == "unbounded"){
+			return "unbounded";
+		}
+		if(result == "unbounded large"){
+			return "infeasible";
+		}
+		if(result != "continue"){
+			// all initial variables should be zero vars 
+			result
+			let opt_value = result[1]
+			let opt_point = result[2]
+			if(!eq(opt_value[1],zero())){
+				return "infeasible";
+			}
+			return [opt_value[0] , opt_point.slice(0, num_vars)];
+		}
+	}
+}
