@@ -12,8 +12,6 @@ put into js file
 
 */
 
-//https://poshmark.com/listing/Eva-Franco-Anthropologie-Bow-Tie-Tube-Mini-Strapless-Metallic-Party-Dress-654533bbfe2504f59ac3b453
-//https://in.pinterest.com/pin/strapless-pink-taffeta-aline-short-party-dress-with-bow-video-video--750553094185287060/
 
 
 type point = [number, number]
@@ -106,7 +104,7 @@ type outline = {"thickness" : number, "color":string}
 type shape_types = "line"|"bezier"|"smooth bezier"|"polygon"|"circle"|"bezier shape"|"smooth bezier shape"
 type shape = {
     "parent_layer" : string 
-    "points" : [string, number, number][] // just the names 
+    "points" : [string, number, number][] // name, offsetx offsety
     "name":string
     "type": shape_types
     "fill" ?: string|point_fill
@@ -114,6 +112,7 @@ type shape = {
     "visible" : boolean
     "outline_visible" : boolean
     "insertion_point" ?: string // new points will be inserted here
+    "tag":string[]
 }
 
 type layer = {
@@ -132,11 +131,11 @@ type display_total  = {
     selected_point ?: string
     selected_shape ?: string
     selected_layer : string // there must be a selected layer at all times, that's where new shapes get drawn
-    
+    true_points : boolean // if true, draw where the point actually is
+
     total_points : number  
     total_shapes : number
     message : string 
-    true_points : boolean
 }
 
 function get_layer(layers : layer[], name : string ) : layer| undefined{
@@ -496,6 +495,7 @@ function output_draw(d : display_total, ignore_zoom = false) : draw_command[]{
                         points_lst.push(["blue", points_dict[p][0], points_dict[p][1],p]);
                     }
                 }
+                let i=1;
                 for(let [color,x,y,name] of points_lst){
                     if(!visible_points.has(name)){
                         continue;
@@ -503,7 +503,12 @@ function output_draw(d : display_total, ignore_zoom = false) : draw_command[]{
                     let selected = (name == d.selected_point);
                     shapes.push(add_com(d_circle([x,y], selected ? 5/d.zoom[2] : 3/d.zoom[2]), {"color": selected ? "red" : color, "fill":true}));
                     if(d.show_labels){
-                        shapes.push(add_com(d_text(name,  lincomb(1/d.zoom[2], [4,4],1,[x,y])), {"color" : "black", "size":15}));
+                        // for shapes , show in increasing orde 
+                        
+                        if(d.show_points == "shape"){
+                            shapes.push(add_com(d_text(i.toString(),  lincomb(1/d.zoom[2], [4,4],1,[x,y])), {"color" : "black", "size":15}));
+                            i++;
+                        }
                     }
                 }
             }
@@ -574,7 +579,14 @@ function get_closest_point(d : display_total, p : point, visible: boolean = true
 
 // MUTATE DISPLAY TOTAL
 
-//create a new point and add it to the current shape
+function change_tags(d : display_total, shape : string, tags : string){
+     let shape_obj = list_shapes(d)[shape];
+     if(shape_obj != undefined){
+        shape_obj[0].tag = tags.split("|").map(x => x.trim());
+     }
+}
+
+
 function rename_layer(d : display_total, layer_orig : string, layer_new : string){
     if(layer_orig == layer_new){
         return;
@@ -597,6 +609,8 @@ function rename_layer(d : display_total, layer_orig : string, layer_new : string
         }
     }
 }
+
+
 function add_unassociated_point(d : display_total, p : point){
     let name = d.total_points.toString();
     d.points.push([name, p[0], p[1]]);
@@ -606,7 +620,7 @@ function add_unassociated_point(d : display_total, p : point){
 
 
 
-//add point to selected shape
+//create a new point and add it to the current shape
 function add_point(d : display_total, p : point){
     if(d.selected_shape == undefined){
         d.message = "selected shape is not visible";
@@ -734,7 +748,7 @@ function add_new_shape(d : display_total, layer : string,type : shape_types , p 
         d.total_shapes++;
     }
     d.total_shapes++;
-    let shape : shape = {"parent_layer" : layer, "type":type, "points" : [], "name" : name, "outline_visible":true, "visible":true}
+    let shape : shape = {"parent_layer" : layer, "type":type, "points" : [], "name" : name, "outline_visible":true, "visible":true, tag:[]}
     if(type == "line" || type == "bezier" || type == "smooth bezier"){
         shape.outline = {"color":"black" , "thickness" : 1}
     } else {
@@ -810,9 +824,48 @@ function clone_shape(d : display_total, shape_name : string, add_to_layer : bool
 
 type matrix3 = [point3d,point3d,point3d]
 // applies to selected shape or layer
-function apply_matrix3(d :display_total, mat : matrix3, scope : "shape" | "layer" | "all" | [string[], "layer"|"point"]){
-    // don't question it
-    let points_to_affect = scope == "shape" ? get_points(list_shapes(d)[d.selected_shape ?? Math.random().toString()]?.[0]  ?? {type:"line", points:[]}) : (scope == "layer" ? (get_layer(d.layers, d.selected_layer)?.shapes ?? []).reduce((x : Set<string> , y : shape) => {x=x.union(get_points(y)); return x;} , new Set()) : (scope == "all" ? new Set(d.points.map(x => x[0])) : (scope[1] == "layer" ? flatten(scope[0].map(x => get_layer(d.layers, x)?.shapes ?? [])).map(x => get_points(x)).reduce((x : Set<string>, y : Set<string>) => {x = x.union(y); return x}, new Set()) : new Set(scope[0])  )));
+function apply_matrix3(d :display_total, mat : matrix3, scope : "shape" | "layer" | "all" | [string[], "tag"|"layer"|"point"]){
+
+
+    let points_to_affect: Set<string>;
+
+    if (scope === "shape") {
+        const selectedShapeKey = d.selected_shape ?? Math.random().toString();
+        const shapeEntry = list_shapes(d)[selectedShapeKey]?.[0] ?? { type: "line", points: [] };
+        points_to_affect = get_points(shapeEntry);
+
+    } else if (scope === "layer") {
+        const layer = get_layer(d.layers, d.selected_layer);
+        const shapes = layer?.shapes ?? [];
+        points_to_affect = shapes.reduce((acc: Set<string>, shape: shape) => {
+            return acc.union(get_points(shape));
+        }, new Set());
+
+    } else if (scope === "all") {
+        points_to_affect = new Set(d.points.map(x => x[0]));
+
+    } else if (scope[1] === "layer") {
+        const layers = scope[0].map(x => get_layer(d.layers, x.trim())?.shapes ?? []);
+        const shapes = flatten(layers);
+        points_to_affect = shapes.map(get_points).reduce((acc: Set<string>, pts: Set<string>) => {
+            return acc.union(pts);
+        }, new Set());
+
+    } else if (scope[1] === "tag") {
+        const allShapes = Object.values(list_shapes(d));
+        const matchingShapes = allShapes.filter(([shape, _]) =>
+            scope[0].map(x => x.trim()).some(tag => shape.tag.indexOf(tag) !== -1)
+        );
+        points_to_affect = matchingShapes.reduce((acc: Set<string>, [shape, _]) => {
+            return acc.union(get_points(shape));
+        }, new Set<string>());
+
+    } else {
+        points_to_affect = new Set(scope[0].map(x => x.trim()));
+    }
+
+        // don't question it
+//    let points_to_affect : Set<string> = scope == "shape" ? get_points(list_shapes(d)[d.selected_shape ?? Math.random().toString()]?.[0]  ?? {type:"line", points:[]}) : (scope == "layer" ? (get_layer(d.layers, d.selected_layer)?.shapes ?? []).reduce((x : Set<string> , y : shape) => {x=x.union(get_points(y)); return x;} , new Set()) : (scope == "all" ? new Set(d.points.map(x => x[0])) : (scope[1] == "layer" ? flatten(scope[0].map(x => get_layer(d.layers, x)?.shapes ?? [])).map(x => get_points(x)).reduce((x : Set<string>, y : Set<string>) => {x = x.union(y); return x}, new Set()) : ( scope[1] == "tag" ? Object.values(list_shapes(d)).filter(x => _.some(scope[0], y =>  x[0].tag.indexOf(y) != -1)).reduce((x : Set<string>,y:[shape, string]) => x = x.union(get_points(y[0])), new Set()) : new Set(scope[0]))   )));
 
     for(let [i, pt] of d.points.entries()){
         if(points_to_affect.has(pt[0])){
@@ -828,6 +881,9 @@ function move_shape(d : display_total, shape_name : string, target_layer : strin
     let s=  list_shapes(d)[shape_name];
     if(s != undefined){
         let [shape, layer] = s;
+        if(layer == target_layer){
+            return 
+        }
         let layer_obj = get_layer(d.layers, layer);
         let new_layer_obj = get_layer(d.layers, target_layer); 
         if(layer_obj == undefined || new_layer_obj == undefined){
@@ -1028,7 +1084,7 @@ function draw_all(canvas_only  : boolean = false ){
     (document.getElementById("frames2") as HTMLDivElement).innerHTML += `<b>SHAPES IN LAYER ${display.selected_layer}</b>`
     for(let [i, shape] of (get_layer(display.layers, display.selected_layer)?.shapes ?? []).entries() ) {
         (document.getElementById("frames2") as HTMLDivElement).innerHTML += `<div ${shape.name
-             == display.selected_shape ? "style=\"background-color:lightblue;\"" : ""}>${shape.name} : ${shape.type} <button onClick="select_shape(display, '${shape.name}') ; change();">Select</button>
+             == display.selected_shape ? "style=\"background-color:lightblue;\"" : ""}>${shape.name} : ${shape.type} <br /><button onClick="select_shape(display, '${shape.name}') ; change();">Select</button>
 <button onClick="clone_shape(display, '${shape.name}');change();">Clone</button>
 <button onClick="remove_shape(display, '${shape.name}'); change();">Delete</button>
  
@@ -1041,6 +1097,7 @@ function draw_all(canvas_only  : boolean = false ){
     if(display.selected_shape != undefined){
         let selected_shape : shape  =list_shapes(display)[display.selected_shape][0];
         if(selected_shape != undefined){
+            //shape stuff
             (document.getElementById("frames3") as HTMLDivElement).innerHTML = `<div><input type="text" id="shape_name" value="${selected_shape.name}" onChange="rename_shape(display, display.selected_shape, document.getElementById('shape_name').value);change();"/> <br /> ${selected_shape.type} <select id="shape_types_dropdown" onChange ="list_shapes(display)[display.selected_shape][0].type = document.getElementById('shape_types_dropdown').selectedOptions[0].innerText; change()" ><option>line</option>
 <option>bezier</option>
 <option>smooth bezier</option>
@@ -1048,7 +1105,7 @@ function draw_all(canvas_only  : boolean = false ){
 <option>circle</option>
 <option>bezier shape</option>
 <option>smooth bezier shape</option> </select> <br /> ${selected_shape.visible ? "visible" : "invisible"} <button onClick="let x = list_shapes(display)['${selected_shape.name}'][0]; x.visible =!x.visible;change()">Toggle visible</button><br />`;
-            
+            //outline
             (document.getElementById("frames3") as HTMLDivElement).innerHTML  +=`<br /><b> OUTLINE ${selected_shape.outline_visible ? "" : " (invis)"}</b><br />`
             if(selected_shape.outline != undefined){
                 (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<textarea id="${selected_shape.name} outline">${JSON.stringify(selected_shape.outline)}</textarea><br /><button onClick="set_outline(display, '${selected_shape.name}', JSON.parse(document.getElementById('${selected_shape.name} outline').value));change();">Set outline</button>
@@ -1058,6 +1115,7 @@ function draw_all(canvas_only  : boolean = false ){
                 (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<button onClick="set_outline(display,'${selected_shape.name}', {'thickness':1,'color':'black'});change();">Add outline</button>
 `
             }
+            // fillstyle
             (document.getElementById("frames3") as HTMLDivElement).innerHTML  +="<br /><b> FILLSTYLE</b><br />"
             if(selected_shape.fill != undefined){
                 (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<textarea id="${selected_shape.name} fillstyle">${JSON.stringify(selected_shape.fill)}</textarea><br /><button onClick="fillstyle_check('${selected_shape.name}', document.getElementById('${selected_shape.name} fillstyle').value);">Set fillstyle</button>
@@ -1073,6 +1131,15 @@ function draw_all(canvas_only  : boolean = false ){
                 (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<button onClick="set_fillstyle(display,'${selected_shape.name}', 'default3');change();">Add conic fillstyle</button>
 <br />`;
             }
+
+            (document.getElementById("frames3") as HTMLDivElement).innerHTML  +="<br /><b> TAGS</b><br />";
+
+            //tags
+            (document.getElementById("frames3") as HTMLDivElement).innerHTML  +="<br />Separate tags by \"|\"<br />";
+
+            (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<textarea onChange="change_tags(display, '${selected_shape.name}', document.getElementById('tags_obj').value)" id="tags_obj">${selected_shape.tag.join("|")}</textarea>`; 
+            (document.getElementById("frames3") as HTMLDivElement).innerHTML  +="<br /><b> POINTS</b><br />";
+            // points
             (document.getElementById("frames3") as HTMLDivElement).innerHTML  += `<br /><textarea id=\"points_text\">${JSON.stringify(selected_shape.points)}</textarea><button onClick="try { let x = JSON.parse(document.getElementById('points_text').value); if(window.z.array(window.z.tuple([window.z.string(),window.z.number(), window.z.number()])).safeParse(x).success == false){throw 'not valid points';}; set_points_s(display,'${selected_shape.name}', x); } catch(e){ display.message = e}; change(); ">Set points</button>`;
             (document.getElementById("frames3") as HTMLDivElement).innerHTML  += "<br />";
 

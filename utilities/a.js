@@ -1624,6 +1624,298 @@ function corners(tlx, tly, width, height, angle) {
     cornersLst.push([cornersLst[0][0] + height * Math.cos(angle + Math.PI / 2), cornersLst[0][1] + height * Math.sin(angle + Math.PI / 2)]);
     return cornersLst;
 }
+// max cx : Ax <= b, x >= 0
+//WARNING: mutates all inputs (except obs)
+let default_op = {
+    "add": (x, y) => x + y,
+    "mul": (x, y) => x * y,
+    "zero": () => 0,
+    "one": () => 1,
+    "ai": (x) => -x,
+    "mi": (x) => 1 / x,
+    "lt": (x, y) => x < y,
+    "leq": (x, y) => x <= y,
+    "eq": (x, y) => x == y
+};
+/*
+let fractions_op  = {
+    "add" : (x,y) => x.add(y),
+    "mul" : (x, y) => x.mul(y),
+    "zero": () => new Fraction(0, 1),
+    "one": () => new Fraction(1, 1),
+    "ai" : (x) => x.neg(),
+    "mi" : (x) => x.inverse(),
+    "lt" : (x,y) => x.lt(y),
+    "leq"  : (x,y) => x.lte(y),
+    "eq" : (x , y) => x.equals(y)
+}
+
+function convert(arg ){
+    for(let i=0 ; i< arg.length; i++){
+        if(Array.isArray(arg[i])){
+            convert(arg[i])
+        } else {
+            arg[i] = new Fraction(arg[i]);
+        }
+    }
+    return arg
+}
+
+function unconvert(arg ){
+    if(!Array.isArray(arg)){
+        return arg;
+    }
+    for(let i=0 ; i< arg.length; i++){
+        if(Array.isArray(arg[i])){
+            unconvert(arg[i])
+        } else {
+            try {
+                arg[i] = arg[i].toFraction()
+            } catch(e){
+
+            }
+        }
+    }
+    return arg
+}
+*/
+function simplex_pivot_op(ops, entering_index, leaving_index, zero_vars, nonzero_vars, eqns) {
+    let { add, mul, zero, one, ai, mi, lt, leq } = ops;
+    // now we need to change eqns (objective function doesn't change) 
+    // recall eqns : nonzero var = coefficients * zero vars + constant 
+    let entering_variable = zero_vars[entering_index];
+    let leaving_variable = nonzero_vars[leaving_index];
+    let leaving_row = eqns[leaving_index];
+    let coef = leaving_row.splice(entering_index, 1)[0];
+    leaving_row.splice(leaving_row.length - 1, 0, ai(one()));
+    for (let i = 0; i < leaving_row.length; i++) {
+        leaving_row[i] = mul(leaving_row[i], mi(ai(coef)));
+    }
+    // now we have an equation for entering_variable in terms of other variables 
+    // adjust the other rows
+    for (let i = 0; i < eqns.length; i++) {
+        if (i == leaving_index) {
+            continue;
+        }
+        let row = eqns[i];
+        let coef = row.splice(entering_index, 1)[0];
+        row.splice(row.length - 1, 0, zero());
+        for (let j = 0; j < row.length; j++) {
+            row[j] = add(row[j], mul(coef, leaving_row[j]));
+        }
+    }
+    zero_vars.splice(entering_index, 1);
+    zero_vars.push(leaving_variable);
+    nonzero_vars.splice(leaving_index, 1);
+    nonzero_vars.push(entering_variable);
+}
+function simplex_it(ops, names, zero_vars, nonzero_vars, eqns, obj, desired_enter = undefined) {
+    // does one iteration of the simplex algorithm , mutates inputs 
+    // every nonzero var is a constant + something involving only zero vars 
+    // zero vars union nonzero vars = names , 	
+    // matrix coefficients : every row is a nonzero var, as in the order in the nonzero_vars list, every number is a coefficient , as in the zero_vars list. the last entry is the constant.
+    // assume all coefficients are >= 0 
+    // obj uses the names list
+    // do error checking 
+    let { add, mul, zero, one, ai, mi, lt, leq, eq } = ops;
+    // choose entering variable - a zero var to make nonzero
+    let entering_variable = undefined;
+    let best_choice = [zero(), zero()];
+    for (let [i, candidate] of zero_vars.entries()) {
+        // compute how much the objective will increase if we increase this zero variable 
+        let direct_amt = obj[names.indexOf(candidate)];
+        let coef = [zero(), zero()];
+        if (direct_amt == "large") { // "large" = a large NEGATIVE number 
+            coef = [zero(), ai(one())]; // but coefficients represent it as a POSITIVE number
+        }
+        else {
+            coef = [direct_amt, zero()];
+        }
+        for (let [j, row] of eqns.entries()) {
+            // increasing the candidate will also change nonzero var[j] by row[i]
+            let term = obj[names.indexOf(nonzero_vars[j])];
+            if (term != "large") {
+                coef[0] = add(coef[0], mul(row[i], term));
+            }
+            else {
+                coef[1] = add(coef[1], mul(row[i], ai(one())));
+            }
+        }
+        if (lt(zero(), coef[1]) || (eq(zero(), coef[1]) && lt(zero(), coef[0]))) { // coefficient > 0 
+            if (entering_variable == undefined || lt(best_choice[1], coef[1]) || (eq(best_choice[1], coef[1]) && lt(best_choice[0], coef[0]))) {
+                entering_variable = candidate;
+                best_choice = coef;
+            }
+        }
+        if (candidate == desired_enter) {
+            if (lt(coef[1], zero()) || (eq(coef[1], zero()) && lt(coef[0], zero()))) {
+                throw "desired entering variable cannot be an entering variable";
+            }
+            else {
+                entering_variable = candidate;
+                best_choice = coef;
+            }
+        }
+    }
+    if (entering_variable == undefined) {
+        let opt_result = [];
+        for (let item of names) {
+            if (nonzero_vars.indexOf(item) == -1) {
+                opt_result.push(zero());
+            }
+            else {
+                let row = eqns[nonzero_vars.indexOf(item)];
+                opt_result.push(row[row.length - 1]);
+            }
+        }
+        let sum = zero();
+        let largesum = zero();
+        for (let i = 0; i < names.length; i++) {
+            let obj_coef = obj[i];
+            if (obj_coef != "large") {
+                sum = add(sum, mul(opt_result[i], obj_coef));
+            }
+            else {
+                largesum = add(largesum, mul(opt_result[i], ai(one())));
+            }
+        }
+        return ["optimal", [sum, largesum], opt_result];
+    }
+    let entering_index = zero_vars.indexOf(entering_variable);
+    let smallest = undefined;
+    let leaving_variable = undefined;
+    // choose the leaving variable (nonzero to make zero)
+    for (let i = 0; i < eqns.length; i++) {
+        let row = eqns[i];
+        if (leq(zero(), row[entering_index])) {
+            continue; // this row will not be a problem 
+        }
+        let limit = mul(ai(row[row.length - 1]), mi(row[entering_index]));
+        if (smallest == undefined || leq(limit, smallest)) {
+            leaving_variable = nonzero_vars[i];
+            smallest = limit;
+        }
+    }
+    if (smallest == undefined || leaving_variable == undefined) {
+        // check the current position for large values
+        let large = zero();
+        for (let [i, item] of names.entries()) {
+            if (zero_vars.indexOf(item) != -1) {
+                continue;
+            }
+            if (obj[i] != "large") {
+                continue;
+            }
+            large = add(large, eqns[nonzero_vars.indexOf(item)][eqns[0].length - 1]);
+        }
+        if (!eq(large, zero())) {
+            return "unbounded large";
+        }
+        return "unbounded";
+    }
+    let leaving_index = nonzero_vars.indexOf(leaving_variable);
+    simplex_pivot_op(ops, entering_index, leaving_index, zero_vars, nonzero_vars, eqns);
+    let moved_row = eqns.splice(leaving_index, 1);
+    eqns.push(moved_row[0]);
+    return "continue";
+}
+function simplex(ops, A, b, ca) {
+    let num_vars = A[0].length;
+    let num_cons = A.length;
+    if (ca.length != num_vars) {
+        throw "c.length must equal number of variables";
+    }
+    if (b.length != num_cons) {
+        throw "b.length must equal number of constraints";
+    }
+    let { add, mul, zero, one, ai, mi, lt, leq, eq } = ops;
+    // clone A, b, c
+    A = [...A];
+    for (let i = 0; i < A.length; i++) {
+        A[i] = [...A[i]];
+    }
+    b = [...b];
+    ca = [...ca];
+    let c = ca;
+    let names = [];
+    for (let i = 0; i < num_vars; i++) {
+        names.push("x" + i);
+    }
+    //  add slack variables	
+    for (let i = 0; i < num_cons; i++) {
+        names.push("slack" + i);
+        c.push(zero());
+        for (let row = 0; row < num_cons; row++) {
+            if (row == i) {
+                A[row].push(one());
+            }
+            else {
+                A[row].push(zero());
+            }
+        }
+    }
+    // negate every row with a negative b
+    for (let i = 0; i < num_cons; i++) {
+        if (lt(b[i], zero())) {
+            let row = A[i];
+            b[i] = ai(b[i]);
+            for (let j = 0; j < row.length; j++) {
+                row[j] = ai(row[j]);
+            }
+        }
+    }
+    // add "initial slack" variables and start the simplex algorithm
+    for (let i = 0; i < num_cons; i++) {
+        names.push("initial slack" + i);
+        c.push('large');
+        for (let row = 0; row < num_cons; row++) {
+            if (row == i) {
+                A[row].push(one());
+            }
+            else {
+                A[row].push(zero());
+            }
+        }
+    }
+    // the zero vars are the "old" variables and the nonzero vars are the "new" variables
+    let zero_vars = [];
+    let nonzero_vars = [];
+    for (let var_ of names) {
+        if (var_.indexOf("initial slack") != -1) {
+            nonzero_vars.push(var_);
+        }
+        else {
+            zero_vars.push(var_);
+        }
+    }
+    let eqns = [];
+    for (let i = 0; i < nonzero_vars.length; i++) {
+        eqns.push([]);
+        for (let j = 0; j < zero_vars.length; j++) {
+            eqns[eqns.length - 1].push(ai(A[i][j]));
+        }
+        eqns[eqns.length - 1].push(b[i]);
+    }
+    while (true) {
+        let result = simplex_it(ops, names, zero_vars, nonzero_vars, eqns, c);
+        if (result == "unbounded") {
+            return "unbounded";
+        }
+        if (result == "unbounded large") {
+            return "infeasible";
+        }
+        if (result != "continue") {
+            // all initial variables should be zero vars 
+            result;
+            let opt_value = result[1];
+            let opt_point = result[2];
+            if (!eq(opt_value[1], zero())) {
+                return "infeasible";
+            }
+            return [opt_value[0], opt_point.slice(0, num_vars)];
+        }
+    }
+}
 function point_fill_to_fill(f, points) {
     if (typeof (f) == "string") {
         return f;
@@ -2021,6 +2313,7 @@ function output_draw(d, ignore_zoom = false) {
                         points_lst.push(["blue", points_dict[p][0], points_dict[p][1], p]);
                     }
                 }
+                let i = 1;
                 for (let [color, x, y, name] of points_lst) {
                     if (!visible_points.has(name)) {
                         continue;
@@ -2028,7 +2321,11 @@ function output_draw(d, ignore_zoom = false) {
                     let selected = (name == d.selected_point);
                     shapes.push(add_com(d_circle([x, y], selected ? 5 / d.zoom[2] : 3 / d.zoom[2]), { "color": selected ? "red" : color, "fill": true }));
                     if (d.show_labels) {
-                        shapes.push(add_com(d_text(name, lincomb(1 / d.zoom[2], [4, 4], 1, [x, y])), { "color": "black", "size": 15 }));
+                        // for shapes , show in increasing orde 
+                        if (d.show_points == "shape") {
+                            shapes.push(add_com(d_text(i.toString(), lincomb(1 / d.zoom[2], [4, 4], 1, [x, y])), { "color": "black", "size": 15 }));
+                            i++;
+                        }
                     }
                 }
             }
@@ -2089,7 +2386,12 @@ function get_closest_point(d, p, visible = true) {
     return closest;
 }
 // MUTATE DISPLAY TOTAL
-//create a new point and add it to the current shape
+function change_tags(d, shape, tags) {
+    let shape_obj = list_shapes(d)[shape];
+    if (shape_obj != undefined) {
+        shape_obj[0].tag = tags.split("|").map(x => x.trim());
+    }
+}
 function rename_layer(d, layer_orig, layer_new) {
     if (layer_orig == layer_new) {
         return;
@@ -2118,7 +2420,7 @@ function add_unassociated_point(d, p) {
     d.total_points++;
     return name;
 }
-//add point to selected shape
+//create a new point and add it to the current shape
 function add_point(d, p) {
     if (d.selected_shape == undefined) {
         d.message = "selected shape is not visible";
@@ -2241,7 +2543,7 @@ function add_new_shape(d, layer, type, p) {
         d.total_shapes++;
     }
     d.total_shapes++;
-    let shape = { "parent_layer": layer, "type": type, "points": [], "name": name, "outline_visible": true, "visible": true };
+    let shape = { "parent_layer": layer, "type": type, "points": [], "name": name, "outline_visible": true, "visible": true, tag: [] };
     if (type == "line" || type == "bezier" || type == "smooth bezier") {
         shape.outline = { "color": "black", "thickness": 1 };
     }
@@ -2314,8 +2616,41 @@ function clone_shape(d, shape_name, add_to_layer = true) {
 }
 // applies to selected shape or layer
 function apply_matrix3(d, mat, scope) {
+    let points_to_affect;
+    if (scope === "shape") {
+        const selectedShapeKey = d.selected_shape ?? Math.random().toString();
+        const shapeEntry = list_shapes(d)[selectedShapeKey]?.[0] ?? { type: "line", points: [] };
+        points_to_affect = get_points(shapeEntry);
+    }
+    else if (scope === "layer") {
+        const layer = get_layer(d.layers, d.selected_layer);
+        const shapes = layer?.shapes ?? [];
+        points_to_affect = shapes.reduce((acc, shape) => {
+            return acc.union(get_points(shape));
+        }, new Set());
+    }
+    else if (scope === "all") {
+        points_to_affect = new Set(d.points.map(x => x[0]));
+    }
+    else if (scope[1] === "layer") {
+        const layers = scope[0].map(x => get_layer(d.layers, x.trim())?.shapes ?? []);
+        const shapes = flatten(layers);
+        points_to_affect = shapes.map(get_points).reduce((acc, pts) => {
+            return acc.union(pts);
+        }, new Set());
+    }
+    else if (scope[1] === "tag") {
+        const allShapes = Object.values(list_shapes(d));
+        const matchingShapes = allShapes.filter(([shape, _]) => scope[0].map(x => x.trim()).some(tag => shape.tag.indexOf(tag) !== -1));
+        points_to_affect = matchingShapes.reduce((acc, [shape, _]) => {
+            return acc.union(get_points(shape));
+        }, new Set());
+    }
+    else {
+        points_to_affect = new Set(scope[0].map(x => x.trim()));
+    }
     // don't question it
-    let points_to_affect = scope == "shape" ? get_points(list_shapes(d)[d.selected_shape ?? Math.random().toString()]?.[0] ?? { type: "line", points: [] }) : (scope == "layer" ? (get_layer(d.layers, d.selected_layer)?.shapes ?? []).reduce((x, y) => { x = x.union(get_points(y)); return x; }, new Set()) : (scope == "all" ? new Set(d.points.map(x => x[0])) : (scope[1] == "layer" ? flatten(scope[0].map(x => get_layer(d.layers, x)?.shapes ?? [])).map(x => get_points(x)).reduce((x, y) => { x = x.union(y); return x; }, new Set()) : new Set(scope[0]))));
+    //    let points_to_affect : Set<string> = scope == "shape" ? get_points(list_shapes(d)[d.selected_shape ?? Math.random().toString()]?.[0]  ?? {type:"line", points:[]}) : (scope == "layer" ? (get_layer(d.layers, d.selected_layer)?.shapes ?? []).reduce((x : Set<string> , y : shape) => {x=x.union(get_points(y)); return x;} , new Set()) : (scope == "all" ? new Set(d.points.map(x => x[0])) : (scope[1] == "layer" ? flatten(scope[0].map(x => get_layer(d.layers, x)?.shapes ?? [])).map(x => get_points(x)).reduce((x : Set<string>, y : Set<string>) => {x = x.union(y); return x}, new Set()) : ( scope[1] == "tag" ? Object.values(list_shapes(d)).filter(x => _.some(scope[0], y =>  x[0].tag.indexOf(y) != -1)).reduce((x : Set<string>,y:[shape, string]) => x = x.union(get_points(y[0])), new Set()) : new Set(scope[0]))   )));
     for (let [i, pt] of d.points.entries()) {
         if (points_to_affect.has(pt[0])) {
             let result = Mv(mat, [pt[1], pt[2], 1]);
@@ -2329,6 +2664,9 @@ function move_shape(d, shape_name, target_layer) {
     let s = list_shapes(d)[shape_name];
     if (s != undefined) {
         let [shape, layer] = s;
+        if (layer == target_layer) {
+            return;
+        }
         let layer_obj = get_layer(d.layers, layer);
         let new_layer_obj = get_layer(d.layers, target_layer);
         if (layer_obj == undefined || new_layer_obj == undefined) {
@@ -2444,7 +2782,8 @@ let base_display = {
     selected_layer: "base",
     total_points: 0,
     total_shapes: 0,
-    message: ""
+    message: "",
+    true_points: true
 };
 let display = JSON.parse(JSON.stringify(base_display));
 let history = [];
@@ -2509,7 +2848,7 @@ function draw_all(canvas_only = false) {
     document.getElementById("frames2").innerHTML += `<b>SHAPES IN LAYER ${display.selected_layer}</b>`;
     for (let [i, shape] of (get_layer(display.layers, display.selected_layer)?.shapes ?? []).entries()) {
         document.getElementById("frames2").innerHTML += `<div ${shape.name
-            == display.selected_shape ? "style=\"background-color:lightblue;\"" : ""}>${shape.name} : ${shape.type} <button onClick="select_shape(display, '${shape.name}') ; change();">Select</button>
+            == display.selected_shape ? "style=\"background-color:lightblue;\"" : ""}>${shape.name} : ${shape.type} <br /><button onClick="select_shape(display, '${shape.name}') ; change();">Select</button>
 <button onClick="clone_shape(display, '${shape.name}');change();">Clone</button>
 <button onClick="remove_shape(display, '${shape.name}'); change();">Delete</button>
  
@@ -2521,6 +2860,7 @@ function draw_all(canvas_only = false) {
     if (display.selected_shape != undefined) {
         let selected_shape = list_shapes(display)[display.selected_shape][0];
         if (selected_shape != undefined) {
+            //shape stuff
             document.getElementById("frames3").innerHTML = `<div><input type="text" id="shape_name" value="${selected_shape.name}" onChange="rename_shape(display, display.selected_shape, document.getElementById('shape_name').value);change();"/> <br /> ${selected_shape.type} <select id="shape_types_dropdown" onChange ="list_shapes(display)[display.selected_shape][0].type = document.getElementById('shape_types_dropdown').selectedOptions[0].innerText; change()" ><option>line</option>
 <option>bezier</option>
 <option>smooth bezier</option>
@@ -2528,6 +2868,7 @@ function draw_all(canvas_only = false) {
 <option>circle</option>
 <option>bezier shape</option>
 <option>smooth bezier shape</option> </select> <br /> ${selected_shape.visible ? "visible" : "invisible"} <button onClick="let x = list_shapes(display)['${selected_shape.name}'][0]; x.visible =!x.visible;change()">Toggle visible</button><br />`;
+            //outline
             document.getElementById("frames3").innerHTML += `<br /><b> OUTLINE ${selected_shape.outline_visible ? "" : " (invis)"}</b><br />`;
             if (selected_shape.outline != undefined) {
                 document.getElementById("frames3").innerHTML += `<textarea id="${selected_shape.name} outline">${JSON.stringify(selected_shape.outline)}</textarea><br /><button onClick="set_outline(display, '${selected_shape.name}', JSON.parse(document.getElementById('${selected_shape.name} outline').value));change();">Set outline</button>
@@ -2538,6 +2879,7 @@ function draw_all(canvas_only = false) {
                 document.getElementById("frames3").innerHTML += `<button onClick="set_outline(display,'${selected_shape.name}', {'thickness':1,'color':'black'});change();">Add outline</button>
 `;
             }
+            // fillstyle
             document.getElementById("frames3").innerHTML += "<br /><b> FILLSTYLE</b><br />";
             if (selected_shape.fill != undefined) {
                 document.getElementById("frames3").innerHTML += `<textarea id="${selected_shape.name} fillstyle">${JSON.stringify(selected_shape.fill)}</textarea><br /><button onClick="fillstyle_check('${selected_shape.name}', document.getElementById('${selected_shape.name} fillstyle').value);">Set fillstyle</button>
@@ -2554,6 +2896,12 @@ function draw_all(canvas_only = false) {
                 document.getElementById("frames3").innerHTML += `<button onClick="set_fillstyle(display,'${selected_shape.name}', 'default3');change();">Add conic fillstyle</button>
 <br />`;
             }
+            document.getElementById("frames3").innerHTML += "<br /><b> TAGS</b><br />";
+            //tags
+            document.getElementById("frames3").innerHTML += "<br />Separate tags by \"|\"<br />";
+            document.getElementById("frames3").innerHTML += `<textarea onChange="change_tags(display, '${selected_shape.name}', document.getElementById('tags_obj').value)" id="tags_obj">${selected_shape.tag.join("|")}</textarea>`;
+            document.getElementById("frames3").innerHTML += "<br /><b> POINTS</b><br />";
+            // points
             document.getElementById("frames3").innerHTML += `<br /><textarea id=\"points_text\">${JSON.stringify(selected_shape.points)}</textarea><button onClick="try { let x = JSON.parse(document.getElementById('points_text').value); if(window.z.array(window.z.tuple([window.z.string(),window.z.number(), window.z.number()])).safeParse(x).success == false){throw 'not valid points';}; set_points_s(display,'${selected_shape.name}', x); } catch(e){ display.message = e}; change(); ">Set points</button>`;
             document.getElementById("frames3").innerHTML += "<br />";
             for (let [i, [point, o1, o2]] of selected_shape.points.entries()) {

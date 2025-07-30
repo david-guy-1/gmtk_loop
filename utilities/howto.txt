@@ -1,0 +1,10 @@
+compile :  just run convert.py
+
+zod :
+
+1. compile 
+2. in a.ts, remove ordered field definition
+3. run npx ts-to-zod a.ts a_zod.ts
+4. remove import , all exports, and replace z. with window.z.
+5. copy to draw_commands.zod.js
+6. re-add the ordered field definition
