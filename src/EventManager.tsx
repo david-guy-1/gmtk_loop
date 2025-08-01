@@ -1,3 +1,4 @@
+import { globalStore_type } from "./gamedata/globalStore";
 
 
 type eventCall = [(e : any, g : any, globalStore : globalStore_type , params : any ) => void , any]

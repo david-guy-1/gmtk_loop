@@ -8,6 +8,7 @@ import React from "react";
 import { display_type, events_type, gamedata, props_to_run } from "./interfaces";
 import { set_events } from "./EventManager";
 import { combine_obj } from "./lines";
+import { globalStore_type } from "./gamedata/globalStore";
 
 
 
@@ -92,12 +93,16 @@ function GameDisplay( props : {data  : gamedata, globalStore : globalStore_type}
                 let new_tick = Date.now(); 
                 //tick the game once 
                 let evtlst : events_type[] = [];
+                let ticked = false; 
                 while(last_tick < new_tick){
                     let new_events = g.tick();
                     evtlst = evtlst.concat(new_events);
                     last_tick += 1000/FPS 
+                    ticked = true;
                 } 
-
+                if(ticked == false){
+                    return; 
+                }
                 for(let [s,t] of prop_commands(g, globalStore, evtlst)){
                     handle_prop(s, t); 
                 }

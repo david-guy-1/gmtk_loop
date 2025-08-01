@@ -1,3 +1,5 @@
+// for transparency, 1 is opaque and 0 is transparent
+
 type fill_linear  = {
    "type":"fill_linear",
    "x0" : number, 
@@ -30,6 +32,8 @@ type fillstyle = string | fill_linear | fill_radial | fill_conic
 type bezier = [number, number, number, number, number, number];
 
 // start replacing HERE
+
+// x, y are top left
 type drawImage_command = {
    "type" : "drawImage",
    "img" : string,
@@ -116,6 +120,8 @@ type drawEllipse_command = {
    "rotate" ?: number,
    "start" ?: number,
    "end" ?: number,
+   "fill"?:boolean,
+   "stroke_width"?:number
 }
 
 type drawEllipseCR_command = {
@@ -129,20 +135,10 @@ type drawEllipseCR_command = {
    "rotate" ?: number,
    "start" ?: number,
    "end" ?: number,
+   "fill"?:boolean,
+   "stroke_width"?:number
 }
 
-type drawEllipse2_command = {
-   "type" : "drawEllipse2",
-   "posx" : number,
-   "posy" : number,
-   "width" : number,
-   "height" : number,
-   "color" ?: fillstyle,
-   "transparency" ?: number,
-   "rotate" ?: number,
-   "start" ?: number,
-   "end" ?: number,
-}
 
 type drawBezierCurve_command = {
    "type" : "drawBezierCurve",
@@ -180,4 +176,4 @@ type drawRoundedRectangle_command = {
    "fill" ?: boolean,
 }
 
-type draw_command = drawImage_command|drawLine_command|drawCircle_command|drawPolygon_command|drawRectangle_command|drawRectangle2_command|drawText_command|drawEllipse_command|drawEllipseCR_command|drawEllipse2_command|drawBezierCurve_command|drawBezierShape_command|drawRoundedRectangle_command
+type draw_command = drawImage_command|drawLine_command|drawCircle_command|drawPolygon_command|drawRectangle_command|drawRectangle2_command|drawText_command|drawEllipse_command|drawEllipseCR_command|drawBezierCurve_command|drawBezierShape_command|drawRoundedRectangle_command

@@ -38,13 +38,10 @@ export function draw_wrap(lst : draw_command[], c: CanvasRenderingContext2D){
                 drawText(c, item.text_,item.x,item.y,item.width,item.color,item.size, item.font);
             break;
             case "drawEllipse":
-                drawEllipse(c, item.posx,item.posy,item.brx,item.bry,item.color,item.transparency,item.rotate,item.start,item.end);
+                drawEllipse(c, item.posx,item.posy,item.brx,item.bry,item.color,item.transparency,item.rotate,item.start,item.end, item.fill, item.stroke_width);
             break;
             case "drawEllipseCR":
-                drawEllipseCR(c, item.cx,item.cy,item.rx,item.ry,item.color,item.transparency,item.rotate,item.start,item.end);
-            break;
-            case "drawEllipse2":
-                drawEllipse2(c, item.posx,item.posy,item.width,item.height,item.color,item.transparency,item.rotate,item.start,item.end);
+                drawEllipseCR(c, item.cx,item.cy,item.rx,item.ry,item.color,item.transparency,item.rotate,item.start,item.end, item.fill, item.stroke_width);
             break;
             case "drawBezierCurve":
                 drawBezierCurve(c, item.x,item.y,item.p1x,item.p1y,item.p2x,item.p2y,item.p3x,item.p3y,item.color,item.width);

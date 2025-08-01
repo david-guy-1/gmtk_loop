@@ -24,7 +24,7 @@ type props_to_run = [string, any][]
 type draw_fn_type = (g : any, globalStore : globalStore_type , events : events_type[] , canvas : string) => [draw_command[], boolean]; // true = should clear the canvas
 type anim_fn_type = (g : any, globalStore : globalStore_type ,events : events_type[] ) => animation[]
 type sound_fn_type = (g : any, globalStore : globalStore_type ,events : events_type[] ) => [string | undefined, string[]]; // undefined = do not change, "mute" : nothing 
-type prop_commands_type = (g : any,globalStore : globalStore_type , events  :events_type) => props_to_run; 
+type prop_commands_type = (g : any,globalStore : globalStore_type , events  :events_type[]) => props_to_run; 
 type button_click_type = (g : any, globalStore : globalStore_type ,name : string) => props_to_run; 
 type reset_fn_type = () => any; 
 

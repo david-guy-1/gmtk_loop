@@ -87,7 +87,6 @@ export function displace_command(command : draw_command, amt : point) : draw_com
         case "drawRectangle2":
         case "drawEllipse":
         case "drawEllipseCR":
-        case "drawEllipse2":
         case "drawBezierCurve":
         case "drawBezierShape":
         case "drawRoundedRectangle":
@@ -134,11 +133,6 @@ export function displace_command(command : draw_command, amt : point) : draw_com
             new_command.posy += amt[1];
             new_command.brx += amt[0];
             new_command.bry += amt[1];
-        break;
-        case "drawEllipse2":
-            new_command = new_command as drawEllipse2_command;
-            new_command.posx += amt[0];
-            new_command.posy += amt[1];
         break;
         case "drawEllipseCR":
             new_command = new_command as drawEllipseCR_command;
@@ -187,7 +181,6 @@ export function scale_command(command : draw_command, center : point, x_amt : nu
         case "drawRectangle2":
         case "drawEllipse":
         case "drawEllipseCR":
-        case "drawEllipse2":
         case "drawBezierCurve":
         case "drawBezierShape":
         case "drawRoundedRectangle":
@@ -227,7 +220,7 @@ export function scale_command(command : draw_command, center : point, x_amt : nu
             new_command.y = scale_number(new_command.y, center[1], y_amt);
         break;
         case "drawCircle": // converted into drawEllipse
-            var command_c : draw_command = {type:"drawEllipseCR", cx  : command.x, cy : command.y , rx : command.r, ry : command.r, color : command.color, transparency : command.transparency, start : command.start, end : command.end }
+            var command_c : drawEllipseCR_command = {type:"drawEllipseCR", cx  : command.x, cy : command.y , rx : command.r, ry : command.r, color : command.color, transparency : command.transparency, start : command.start, end : command.end ,fill: command.fill, stroke_width : command.width, }
             return scale_command(command_c, center, x_amt, y_amt);
         break;
         case "drawEllipse": // all ellipses are converted into CR format 
@@ -235,12 +228,6 @@ export function scale_command(command : draw_command, center : point, x_amt : nu
             var ry = (command.bry - command.posy)/2
             var centerE :point = [command.posx + rx,command.posy + ry]; 
             return scale_command({type:"drawEllipseCR", cx  : centerE[0], cy : centerE[1] , rx : rx, ry : ry, color : command.color, transparency : command.transparency, rotate : command.rotate, start : command.start, end : command.end }, center, x_amt, y_amt) // check the last 3 
-        break;
-        case "drawEllipse2":
-            var rx = command.width /2
-            var ry = command.height/2
-            var centerE :point = [command.posx + rx,command.posy + ry]; 
-            return scale_command({type:"drawEllipseCR", cx  : centerE[0], cy : centerE[1] , rx : rx, ry : ry, color : command.color, transparency : command.transparency, rotate : command.rotate, start : command.start, end : command.end },  center, x_amt, y_amt) 
         break;
         case "drawEllipseCR":
             new_command = new_command as drawEllipseCR_command; 
@@ -293,7 +280,6 @@ export function rotate_command(command : draw_command, origin : point, amt : num
         case "drawRectangle2":
         case "drawEllipse":
         case "drawEllipseCR":
-        case "drawEllipse2":
         case "drawBezierCurve":
         case "drawBezierShape":
         case "drawRoundedRectangle":
@@ -333,12 +319,6 @@ export function rotate_command(command : draw_command, origin : point, amt : num
             var ry = (command.bry - command.posy)/2
             var center :point = [command.posx + rx,command.posy + ry]; 
             return rotate_command({type:"drawEllipseCR", cx  : center[0], cy : center[1] , rx : rx, ry : ry, color : command.color, transparency : command.transparency, rotate : command.rotate, start : command.start, end : command.end }, origin, amt) // check the last 3 
-        break;
-        case "drawEllipse2":
-            var rx = command.width /2
-            var ry = command.height/2
-            var center :point = [command.posx + rx,command.posy + ry]; 
-            return rotate_command({type:"drawEllipseCR", cx  : center[0], cy : center[1] , rx : rx, ry : ry, color : command.color, transparency : command.transparency, rotate : command.rotate, start : command.start, end : command.end }, origin, amt) 
         break;
         case "drawEllipseCR":
             new_command = new_command as drawEllipseCR_command; 
