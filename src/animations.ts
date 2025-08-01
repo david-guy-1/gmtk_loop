@@ -1,4 +1,5 @@
 
+import { globalStore_type } from "./gamedata/globalStore";
 import { game_interface } from "./interfaces";
 import { clear, draw } from "./process_draws";
 

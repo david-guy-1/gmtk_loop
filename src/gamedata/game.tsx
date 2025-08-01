@@ -2,6 +2,7 @@ import _, { first } from "lodash";
 import { events_type, game_interface, point, rect } from "../interfaces";
 import { dist, move_wallWH, moveTo, pointInsideRectangleWH } from "../lines";
 import { choice, randint } from "../random";
+import { n_trap_rows, n_traps, n_colors } from "./constants";
 
 class game implements game_interface{
     player : point = [400,400];
@@ -11,9 +12,7 @@ class game implements game_interface{
     walls : rect[] = []; 
     items : [string, point | rect][] = [] // always WH 
     paused : boolean = false;
-    n_trap_rows : number = 5;
-    n_traps : number = 20 
-    n_colors : number = 5; 
+
     //constant data 
 
     seed : string = "a";
@@ -39,13 +38,13 @@ class game implements game_interface{
     constructor(){
         this.enter_room("main", [400,400]);
         this.hidden_door = choice([[405,553],[431,554],[464,553],[482,549],[503,549],[524,549],[564,547],[576,519],[576,494],[577,457],[580,435],[583,399],[583,363],[581,334],[582,289],[580,254],[580,206],[580,180],[373,544],[326,552],[285,552]], this.seed + " hidden door") as point
-        for(let i=0; i < this.n_trap_rows; i++){
-            this.trap_safe_points.push(randint(0, this.n_traps, this.seed + " safe point " + i)); 
+        for(let i=0; i < n_trap_rows; i++){
+            this.trap_safe_points.push(randint(0, n_traps, this.seed + " safe point " + i)); 
         }
-        for(let i=0; this.ench_colors.length <this.n_colors; i++){
+        for(let i=0; this.ench_colors.length <n_colors; i++){
             let c = choice(["red","yellow","blue","green"], this.seed + " color" + i );
             if(c != this.ench_colors[this.ench_colors.length-1]){
-                if(!(this.ench_colors.length == this.n_colors-1 && c == this.ench_colors[0])){
+                if(!(this.ench_colors.length == n_colors-1 && c == this.ench_colors[0])){
                     this.ench_colors.push(c);
                 }
             }
@@ -66,15 +65,15 @@ class game implements game_interface{
             this.touched_colors.push(name.slice(4))
             // check portal
             let first_good = true; 
-            for(let i=0; i < this.n_colors; i++){
-                if(this.touched_colors[this.touched_colors.length -this.n_colors+ i] != this.ench_colors[i]){
+            for(let i=0; i < n_colors; i++){
+                if(this.touched_colors[this.touched_colors.length -n_colors+ i] != this.ench_colors[i]){
                     first_good = false;
                     break;
                 }
             }
             let second_good = first_good;
-            for(let i=0; i < this.n_colors; i++){
-                if(this.touched_colors[this.touched_colors.length -2*this.n_colors+ i] != this.ench_colors[i]){
+            for(let i=0; i < n_colors; i++){
+                if(this.touched_colors[this.touched_colors.length -2*n_colors+ i] != this.ench_colors[i]){
                     second_good=false;
                     break;
                 }
@@ -155,8 +154,8 @@ class game implements game_interface{
         }
         if(room == "traps"){
             this.walls.push([50, 50, 800, 0])
-            for(let i=0; i < this.n_trap_rows; i++){
-                for(let j=0; j < this.n_traps; j++){
+            for(let i=0; i < n_trap_rows; i++){
+                for(let j=0; j < n_traps; j++){
                     if(this.trap_safe_points[i] == j){
                         continue;
                     }

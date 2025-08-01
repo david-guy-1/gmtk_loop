@@ -1,4 +1,5 @@
 import { drawImage, drawLine, drawCircle, drawPolygon, drawRectangle, drawRectangle2, drawText, drawEllipse, drawEllipseCR, drawEllipse2, drawBezierCurve, drawBezierShape, drawRoundedRectangle } from "./canvasDrawing";
+import { point } from "./interfaces";
 
 export function draw(lst : draw_command[], c: React.RefObject<HTMLCanvasElement>){
     if(c.current == null){

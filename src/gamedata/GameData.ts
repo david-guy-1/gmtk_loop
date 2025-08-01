@@ -14,8 +14,8 @@ import { combine_obj, lincomb, rescale } from "../lines";
 import { get_orb } from "./items_to_draw";
 import { displace_command } from "../rotation";
 import { globalStore_type } from "./globalStore";
-const CANVAS_WIDTH=800;
-const CANVAS_HEIGHT=700;
+import { CANVAS_WIDTH, CANVAS_HEIGHT, n_colors, n_trap_rows, n_traps } from "./constants";
+
 export let display : display_type = {
     "button" : [],
     "canvas" : [["main",[0,0,CANVAS_WIDTH,CANVAS_HEIGHT]], ["anim_canvas",[0,0,CANVAS_WIDTH,CANVAS_HEIGHT]]],
@@ -52,7 +52,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             }
             if(globalStore.death_anim == "enchantment" && globalStore.anim_time != undefined){
                 let delay = g.time - globalStore.anim_time;
-                if(delay >= 60 * g.n_colors){
+                if(delay >= 60 *n_colors){
                     g.dead = "The enchantment crystal was unstable and killed you";
                 } else { 
                     let color = Math.floor(delay/60);
@@ -64,8 +64,8 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
         if(g.room == "traps"){
             //draw the traps
             if(globalStore.death_anim != "trap" ){
-                for(let i=0; i < g.n_trap_rows; i++){
-                    for(let j=0; j < g.n_traps; j++){
+                for(let i=0; i <n_trap_rows; i++){
+                    for(let j=0; j <n_traps; j++){
                         let point = [35*j+10, 100*i+90];
                         output.push(d_image("trap_1.png", point));
                     }
@@ -82,8 +82,8 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
                 if(anim == 6){
                     g.dead = "Walked into a trap"
                 }
-                for(let i=0; i < g.n_trap_rows; i++){
-                    for(let j=0; j < g.n_traps; j++){
+                for(let i=0; i <n_trap_rows; i++){
+                    for(let j=0; j <n_traps; j++){
 
                         let point = [35*j+10, 100*i+90];
                         output.push(d_image(`trap_${g.trap_safe_points[i] == j ? 1 : anim}.png`, point));
@@ -181,6 +181,9 @@ export let sound_fn : sound_fn_type = function(g : game, globalStore : globalSto
 
 export let prop_commands : prop_commands_type = function(g : game,globalStore : globalStore_type, events : events_type[]){
     let output : props_to_run = []; 
+    if(g.room == "town"){
+        output.push(["swap", "pointandclick"]);
+    }
     return output; 
 }
 
