@@ -157,26 +157,13 @@ export function sha256(m : any) {
     }
     return s;
 }
-var seenSeeds = new Set<string>()
+var seenSeeds : Record<string, number> = {}; 
 
+// outputs a number between 0 and 16^12
 export function get_number(seed : string) {
-	//////console.log(seed);
-	if(seenSeeds.has(seed)){
-		var validList : string[] = []; // we can see these multiple times
-		var good = false;
-		for(var item of validList){
-			if(seed.indexOf(item) == -1){
-				good = true;
-				break;
-			}
-		}
-		if(good == false){
-			////console.log("seen this seed" + seed);
-		}
-
-	}
-
-	seenSeeds.add(seed);
+    if(seenSeeds[seed] != undefined){
+        return seenSeeds[seed]; 
+    }
     //extract first 12 digits and use it as a number
     var lst = sha256_core(string_to_bytes(seed));
     var s = lst[0];
@@ -184,6 +171,7 @@ export function get_number(seed : string) {
         s = 16 * s;
         s += lst[i];
     }
+    seenSeeds[seed] = s; 
     return s;
 }
 export function randint(low : number, high : number, seed : string) {
@@ -226,9 +214,6 @@ export function point_on_circle(distance : number, seed : string) {
     return ([Math.floor(distance * Math.cos(angle)), Math.floor(distance * Math.sin(angle))]);
 }
 
-export function reset_(){
-	seenSeeds.clear();
-}
 
 const factorials = [1,1,2,6,24,120,720,5040,40320,362880,3628800,39916800]
 function factorial(n : number) : number{

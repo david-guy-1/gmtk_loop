@@ -543,7 +543,7 @@ function shape_exists(d : display_total, s : string){
 }
 
 
-function selected_shape_visible(d : display_total){
+function selected_shape_visible(display : display_total){
     if(display.selected_shape == undefined){
         return false; // if the shape doesn't exist, it's not visible
     }
@@ -735,7 +735,7 @@ function set_outline(d : display_total, name : string , data  : outline  | undef
 }
 // the new shape is automatically selected and any points are deselected
 // also adds a point if there is no selected point
-function add_new_shape(d : display_total, layer : string,type : shape_types , p : point ){
+function add_new_shape(d : display_total, layer : string,type : shape_types , p : point ) : string | undefined{
     if(d.layer_visibility[d.selected_layer] == false){
         d.message = "add shape when selected layer not visible";
         return;
@@ -764,9 +764,9 @@ function add_new_shape(d : display_total, layer : string,type : shape_types , p 
         shape.points.push([new_point,0,0]);
     }
     d.selected_point = undefined
-    return name;
-
+    return name; // get the actual shape with list_shapes
 }
+
 function clone_layer(d : display_total, l : string){
     let layer = get_layer(d.layers,l);
     let layers = new Set(d.layers.map(x => x.name));
@@ -1341,10 +1341,10 @@ function scroll_wheel( point : point ,up : boolean){
 function move_points_in_shape(d : display_total, shape : string, amt : point){
     let shape_obj = list_shapes(d)[shape][0];
     let to_move = get_points(shape_obj)
-    for(let [i, pt ] of display.points.entries()){
+    for(let [i, pt ] of d.points.entries()){
         if(to_move.has(pt[0])){
-            display.points[i][1] += amt[0];
-            display.points[i][2] += amt[1];
+            d.points[i][1] += amt[0];
+            d.points[i][2] += amt[1];
         }
     }
 }

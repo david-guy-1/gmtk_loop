@@ -1,0 +1,32 @@
+
+function jiggle(pt, amt){
+	let new_ = lincomb(1, pt, amt*2, [Math.random()-0.5,Math.random()-0.5])
+	return new_
+}	
+
+let pieces = 20
+for(let i=0; i < pieces; i++){
+	let angle = 2*Math.PI/pieces * i + Math.random()*0.05; 
+	let next_angle = 2*Math.PI/pieces * (i+1) + Math.random()*0.05; 
+    let pts = [[80*Math.cos(angle), 80*Math.sin(angle)],[80*Math.cos(next_angle), 80*Math.sin(next_angle)], [110*Math.cos(next_angle), 110*Math.sin(next_angle)],[110*Math.cos(angle), 110*Math.sin(angle)]]
+	let center = [95*Math.cos((angle+next_angle)/2), 95*Math.sin((angle+next_angle)/2)]
+
+	pts = pts.map(function(pt){
+		let disp = lincomb(1, pt, -1, center);
+		let new_pt = lincomb(1, center, Math.random()*0.1+0.78, disp);
+		
+		return jiggle(new_pt, 5);
+	});
+	
+	clone.selected_point = undefined; 
+	add_new_shape(clone, clone.selected_layer,"polygon", pts[0]); 
+	let added_shape = list_shapes(clone)[clone.selected_shape][0]
+	for(let j=1 ; j < 4; j++){
+		add_point(clone, pts[j]);
+	}
+	let color = `hsl(${Math.random()*360}, ${Math.random()*10}%, ${Math.random()*30+20}%)`; 
+	added_shape.outline = {"thickness":3, "color":color};
+	added_shape.fill = color;
+	added_shape.tag.push("fireplace rock");
+}
+

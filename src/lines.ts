@@ -83,7 +83,7 @@ export function shift_lst<T>(lst : T[], n : number, way : boolean){ // true : fo
 	return lst;
 }
 
-// mutates
+// mutates first arg
 export function combine_obj(obj : Record<string,any>,obj2 : Record<string,any>){
 	for(let item of Object.keys(obj2)){
 		obj[item] = obj2[item];
