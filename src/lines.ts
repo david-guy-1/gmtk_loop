@@ -706,7 +706,7 @@ export function move_wallWH(point : point ,walls :[number,number,number,number][
 			break;
 		}
 		if(doLinesIntersect(point, target, [w[0], w[1], w[0]+w[2], w[1]+w[3]])){
-			let intersection = getIntersection(pointToCoefficients(point, target), pointToCoefficients(w));
+			let intersection = getIntersection(pointToCoefficients(point, target), pointToCoefficients([w[0], w[1], w[0]+w[2], w[1]+w[3]]));
 			// target = intersection + (start - intersection) normalized to 0.01
 			target = lincomb(1, intersection, 1, normalize(lincomb(1, point, -1, intersection), epsilon)) as point; 
 		}

@@ -102,7 +102,7 @@ class game implements game_interface{
     constructor(){
         this.seed = Math.random().toString();
         this.rand = new simple_rand(Math.floor(Math.random() * 99999));
-        let choices : point[] = [[405,553],[431,554],[464,553],[482,549],[503,549],[524,549],[564,547],[576,519],[576,494],[577,457],[580,435],[583,399],[583,363],[581,334],[582,289],[580,254],[580,206],[580,180],[373,544],[326,552],[285,552]];
+        let choices : point[] = [[473,569],[507,565],[522,563],[558,564],[573,559],[595,557],[604,548],[568,482],[538,458],[516,446],[494,423],[467,411],[440,431],[425,456],[504,483],[493,452],[463,480],[445,507],[429,547],[402,567],[358,557],[459,605],[511,605],[570,605],[288,585],[287,548],[314,523]];
 
         this.hidden_door =choices[ Math.floor(Math.random()*choices.length)];
         for(let i=0; i < n_trap_rows; i++){
@@ -242,8 +242,11 @@ class game implements game_interface{
         } else { 
             this.player = move_wallWH(this.player, this.walls, this.target, 10) as point;
         }
-        if(this.room == "traps" && this.player[1] > 539){
+        if(this.room == "traps" && this.player[1] > CANVAS_HEIGHT-100){
             this.passed_traps = true;
+            if(this.player[1] > CANVAS_HEIGHT-30){
+                this.enter_room("main", [400, 400])
+            }
             
         }
         for(let item of this.items){
@@ -305,6 +308,11 @@ class game implements game_interface{
 
             }
         }
+        if(this.room == "main"){
+            if(this.player[0] > CANVAS_WIDTH-20){
+                this.enter_room("demon", [100, CANVAS_HEIGHT/2])
+            }
+        }
         this.items = this.items.filter(x => x[0] != "delete me");
 
         return lst;
@@ -344,27 +352,35 @@ class game implements game_interface{
         this.room = room
 
         if(room == "main"){
-            this.items.push(["orb_red", [200,450]]);
+            this.items.push(["orb_red", [200,350]]);
             this.items.push(["orb_yellow", [300,520]]);
             this.items.push(["orb_blue", [400,520]]);
-            this.items.push(["orb_green", [500,450]]);
-            this.items.push(["move_demon|10|300", [550, 200]]);
+            this.items.push(["orb_green", [500,350]]);
+
             this.items.push(["enchantment",[200,200]])
+            let main_room_walls = [[888,229],[831,242],[801,246],[774,241],[769,216],[766,181],[755,152],[736,134],[714,118],[706,83],[684,54],[613,49],[586,67],[531,76],[509,45],[443,67],[372,69],[298,32],[232,40],[175,72],[96,49],[44,78],[49,154],[68,190],[52,217],[19,246],[35,315],[57,364],[19,413],[52,459],[74,515],[52,553],[44,589],[76,636],[175,617],[216,644],[315,660],[386,642],[468,606],[564,662],[605,680],[692,669],[681,613],[774,584],[731,553],[772,557],[788,512],[787,477],[780,424],[772,402],[772,359],[804,332],[821,317],[865,304],[878,304],[888,229]]
+            for(let i=0; i < main_room_walls.length-1; i++){
+                this.walls.push(main_room_walls[i].concat(lincomb(1, main_room_walls[i+1], -1, main_room_walls[i])) as rect); 
+            }
         }
         if(room == "demon"){
             this.items.push(["move_traps|300|10", this.hidden_door]);
+            let demon_room_walls = [[89,80],[76,108],[85,157],[61,240],[69,270],[68,323],[34,424],[22,508],[92,575],[83,607],[105,634],[197,644],[269,653],[369,674],[480,680],[551,638],[641,637],[707,647],[735,636],[744,492],[720,414],[723,313],[757,229],[752,164],[740,84],[735,52],[633,41],[559,50],[448,37],[299,12],[230,25],[130,42],[104,65],[89,80]];
+            for(let i=0; i < demon_room_walls.length-1; i++){
+                this.walls.push(demon_room_walls[i].concat(lincomb(1, demon_room_walls[i+1], -1, demon_room_walls[i])) as rect); 
+            }
         }
         if(room == "traps"){
-            this.walls.push([50, 50, 800, 0])
+            this.walls.push([62, 84, 800, 0])
             for(let i=0; i < n_trap_rows; i++){
                 for(let j=0; j < n_traps; j++){
                     if(this.trap_safe_points[i] == j){
                         continue;
                     }
-                    this.items.push(["trap",[35*j+20, 100*i+100]])
+                    // trigger radius is 20
+                    this.items.push(["trap",[35*j+20, 100*i+200]]) // also update where it's drawn
                 }
             }
-            this.items.push(["move_main|400|400", [500, 580]]);
         }
     }
     jump_fire_orb(){

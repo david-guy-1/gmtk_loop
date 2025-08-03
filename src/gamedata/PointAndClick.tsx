@@ -43,7 +43,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
     }
     if(g.water_orb_found && !g.bad_potion_solved){
         start_mode = "dead magician";
-        start_string = "You return to find the sorceress dead in her room."
+        start_string = "You return to town to look for the sorceress.";
     }
     if(g.water_orb_found && g.bad_potion_solved){
         start_mode = "magic";
@@ -230,18 +230,22 @@ function PointAndClick(props : {g : game, ret : Function}) {
         }
         if(mode == "dead magician"){
             if(messagen == 0){
-                setMessage("She used a bad potion and it exploded, killing her")
+                setMessage("You find her dead in her room.")
                 setMessagen(1);
             }
             if(messagen == 1){
-                setMessage(`It looks like the bad potion is ${g.bad_combo[0]} and ${g.bad_combo[1]}.`)
+                setMessage("She used a bad potion and it exploded, killing her")
                 setMessagen(2);
             }
             if(messagen == 2){
-                setMessage(`If only I knew earlier, I could have told her about it.`)
+                setMessage(`It looks like the bad potion is ${g.bad_combo[0]} and is stored in a ${g.bad_combo[1]}-shaped bottle.`)
                 setMessagen(3);
             }
             if(messagen == 3){
+                setMessage(`If only I knew earlier, I could have told her about it.`)
+                setMessagen(4);
+            }
+            if(messagen == 4){
                 setTimeout(() => g.dead = "Click to restart", 100)
                 g.enter_room("nothing",[0,0]);
                 ret("dungeon");
@@ -314,8 +318,10 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 lst.push(d_image("town/map_start.png", lincomb(-0.5, [40, 40], 0.5, map_size)));
             break;
             case "dead magician":
-                lst.push(d_image("town/dead magician.png",0,0));
-                lst.push(displace_command(get_potion(g.bad_combo[1], g.bad_combo[0]), [400, 400]));
+                lst.push(d_image(messagen == 0? "town/town.png" : "town/dead magician.png",0,0));
+                if(messagen != 0){
+                    lst.push(displace_command(get_potion(g.bad_combo[1], g.bad_combo[0]), [380, 210]));
+                }
         }
         //back button
         if(mode == "magic" || mode == "tour" || mode == "explorer" || mode == "forest map"){

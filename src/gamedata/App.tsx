@@ -10,7 +10,7 @@ import { globalStore_type } from './globalStore';
 import { img_with_center } from '../process_draws';
 import { demon_cmds, door_cmds, get_orb, right_claw } from './items_to_draw';
 import { loadImage } from '../canvasDrawing';
-import PointAndClick from './pointandclick';
+import PointAndClick from './PointAndClick';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from './constants';
 import { load_images } from './load_images';
 
@@ -46,12 +46,14 @@ function App() {
       events["mousedown a"] = [(e,g) =>{g.tap = true} ,g]
       events["touchend a"] = [(e,g) =>{g.tap = false} ,g]
       events["mouseup a"] = [(e,g) =>{g.tap = false} ,g]
-      events["click a"] = [function(e, g, s){console.log("resetting");if(g.dead.length>0){g.reset();s.death_anim = "", s.enter_demon_room = undefined; s.anim_time = undefined; } }, g]
+      events["click a"] = [function(e, g, s){if(g.dead.length>0){console.log("resetting");g.reset();s.death_anim = "", s.enter_demon_room = undefined; s.anim_time = undefined;s.draw_broken_crystal = false; s.draw_objs = true;  } }, g]
       
       let store : globalStore_type = {
         screen: "",
         death_anim: "",
         loaded_imgs: {},
+        draw_objs : true,
+        draw_broken_crystal : false
       }
       for(let i of ["red","yellow","green","blue"]){
         store.loaded_imgs["orb_"+i] = new img_with_center(get_orb({"red":0, "yellow":60, "blue":250,"green":125}[i] ?? 0), 100, 100, 200, 200); 

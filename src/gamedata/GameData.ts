@@ -27,25 +27,10 @@ export let display : display_type = {
 
 export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_type , events : any[] , canvas : string){
     let output : draw_command[] = []; 
-
     if(canvas == "main"){
-        for(let item of g.items){
-            if(item[0].slice(0,4) == "orb_"){
-                output.push(globalStore.loaded_imgs[item[0]].output(item[1][0], item[1][1]));
-            }
-            if(item[0].slice(0, 5) == "move_" && g.room != "demon"){
-                output.push(globalStore.loaded_imgs["move"].output(item[1][0], item[1][1]))
-            }
-            if(item[0] == "enchantment"){
-                output.push(d_image("enchantment.png", item[1][0]-83, item[1][1] - 99));
-                if(_.some(events, x=>x.type == "enchantment")){
-                    output.push(d_text(g.passed_traps ? "click to enchant sword" : "enchantment crystal", [100, 450]))
-                } else {
-                   // console.log("no draw");
-                }
-            }
-        }
+
         if(g.room == "main"){
+            output.push(d_image("main room.png", [0,0]));
             if(_.some(events, x => x.type == "enchantment dead")){
                 g.paused = true;
                 globalStore.death_anim = "enchantment";
@@ -53,12 +38,23 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             }
             if(globalStore.death_anim == "enchantment" && globalStore.anim_time != undefined){
                 let delay = g.time - globalStore.anim_time;
-                if(delay >= 60 *n_colors){
+                if(delay >= 60 *(n_colors+1)){
                     g.dead = "The enchantment crystal was unstable and killed you";
+                    globalStore.draw_objs = true;
                 } else { 
                     let color = Math.floor(delay/60);
                     let size = delay % 60
-                    output.push(combine_obj({"color":g.ench_colors[color], "fill":true, "transparency":1-size/60}, d_circle(180, 180, size*6)) as drawCircle_command)
+                    if(g.ench_colors[color] != undefined){
+                        output.push(combine_obj({"color":g.ench_colors[color], "fill":true, "transparency":1-size/60}, d_circle(180, 180, size*6)) as drawCircle_command)
+                    } else {
+                        globalStore.draw_objs = false ;
+                        if(size > 30){
+                            globalStore.draw_objs = true ;
+                        }
+                        globalStore.draw_broken_crystal = true;
+                        output.push(combine_obj({"color":g.ench_colors[color], "fill":true, "transparency":size < 30 ? 1  :1-(size-30)/30}, d_circle(180, 180, 3000)) as drawCircle_command)
+                    }
+
                 }
             }
             if(_.some(events, x => x.type == "enchanted")){
@@ -66,11 +62,13 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             }
         }
         if(g.room == "traps"){
+            
+            output.push(d_image("traps room.png", [0,0]));
             //draw the traps
             if(globalStore.death_anim != "trap" ){
                 for(let i=0; i <n_trap_rows; i++){
                     for(let j=0; j <n_traps; j++){
-                        let point = [35*j+10, 100*i+90];
+                        let point = [35*j+10, 100*i+190];
                         output.push(d_image("trap_1.png", point));
                     }
                 }
@@ -89,19 +87,22 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
                 for(let i=0; i <n_trap_rows; i++){
                     for(let j=0; j <n_traps; j++){
 
-                        let point = [35*j+10, 100*i+90];
+                        let point = [35*j+10, 100*i+190];
                         output.push(d_image(`trap_${g.trap_safe_points[i] == j ? 1 : anim}.png`, point));
                     }
                 }                
             }
-            if(g.player[1] > 539){
+            if(g.player[1] > CANVAS_HEIGHT-70){
                 output.push(d_text("You find a sword on the ground", [100, 560]));
             }
         }
+        /*
         for(let wall of g.walls){
             output.push(d_line2(wall));
         }
+        */
         if(g.room == "demon"){
+            output.push(d_image("demon room.png", [0,0]));
             if(g.passed_traps && !g.sword_enchanted){
                 output.push(d_text("You can't defeat me with an unenchanted sword!", [100, 450]))
             }
@@ -161,6 +162,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
         }
 
         if(g.room == "forest"){
+            output.push(d_image("forest_bg.png", [0,0])) 
             if(g.enter_forest_room == undefined){
                 g.enter_forest_room = g.time;
             }
@@ -198,7 +200,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
         }
         if(g.room == "monster"){
             // fighting monster in town
-            
+            output.push(d_image("monster_bg.png", [0,0])); 
             
             if(g.enter_monster_room == undefined){
                 g.enter_monster_room = g.time; 
@@ -314,7 +316,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
                 g.enter_temple = g.time; 
             }
             let time = g.time - g.enter_temple; 
-            output.push(d_image("temple/temple_bg.png",[0,0]))
+            output.push(d_image("temple_bg.png",[0,0]))
             for(let i=0; i<3; i++){
                 let seed = JSON.stringify(g.current_temple_point) + g.seed + "_"+ i  
                 let pt : point= [randint(70, CANVAS_WIDTH-70, seed + " c1"),randint(70, CANVAS_HEIGHT-70, seed+" c2")]
@@ -326,7 +328,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
                 for(let i=0; i<3; i++){
                     let seed = JSON.stringify(g.current_temple_point) + g.seed + "_(correct x)"+ i  
                     let pt : point= [randint(70, CANVAS_WIDTH-70, seed + " c1"),randint(70, CANVAS_HEIGHT-70, seed+" c2")]
-                    let image = "temple/green thing.png"
+                    let image = "temple/red thing.png"
                     output.push(d_image(image, pt));
                 }   
             }
@@ -350,7 +352,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             }
             // clue point 
             if(_.isEqual(g.current_temple_point , g.dest_point)){
-                output.push(d_image("temple/water orb.png", [350, 350]));
+                output.push(d_image("temple/water orb.png", [300, 300]));
                 
                 if(dist(g.player, [350, 350]) < 50){
                     g.water_orb_found = true;
@@ -368,9 +370,40 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             }
 
         }
+        // items
+        if(globalStore.draw_objs){
+            for(let item of g.items){
+                if(item[0].slice(0,4) == "orb_"){
+                    output.push(globalStore.loaded_imgs[item[0]].output(item[1][0], item[1][1]));
+                }
+
+                if(item[0] == "enchantment"){
+                    output.push(d_image(globalStore.draw_broken_crystal ? "enchantment_b.png" : "enchantment.png", item[1][0]-83, item[1][1] - 99));
+                    if(_.some(events, x=>x.type == "enchantment")){
+                        let message = "enchantment crystal";
+                        if(g.passed_traps){
+                            message = "click to enchant sword";
+                        }
+                        if(g.water_orb_found && !g.passed_traps){
+                            message = "Don't forget to get the sword!"
+                        }
+                        output.push(d_text(message, [100, 450]))
+                    } else {
+                    // console.log("no draw");
+                    }
+                }
+                if(item[0].indexOf("move_volcano") != -1){
+                    output.push(d_image("volcano_door.png", lincomb(1, item[1], -0.5, [30, 30]) as point));
+                }
+                if(item[0].indexOf("move_town") != -1){
+                    //
+                    output.push(d_image("town_door.png", lincomb(1, item[1], -0.5, [30, 30]) as point));
+                }
+            }
+        }
         if(g.dead.length > 0){
             let text =  d_text(g.dead, 10 , 450 )
-            if(g.room == "temple" || g.room == "forest"){
+            if(g.room == "temple" || g.room == "forest" || g.room == "main" || g.room == "demon"){
                 text.color = "white";
             }
             output.push(text)

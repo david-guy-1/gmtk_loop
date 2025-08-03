@@ -7,4 +7,5 @@ type globalStore_type = {
     loaded_imgs : Record<string, img_with_center>
     enter_demon_room? : number 
     anim_time ?: number
+    draw_objs : boolean; 
 }
