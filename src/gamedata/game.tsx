@@ -176,9 +176,10 @@ class game implements game_interface{
             if(this.tap == false){
                 return {"type": "enchantment"}; 
             } else {
-                if(this.water_orb_found == false || this.fire_orb_found == false){
+                if(this.passed_traps && (this.water_orb_found == false || this.fire_orb_found == false)){
                     return {"type": "enchantment dead"}; 
-                } else { 
+                } 
+                if(this.passed_traps && this.water_orb_found && this.fire_orb_found) { 
                     this.sword_enchanted = true;
                     return {"type":"enchanted"};                    
                 }

@@ -1,4 +1,6 @@
 
+// make fireplace 
+
 function jiggle(pt, amt){
 	let new_ = lincomb(1, pt, amt*2, [Math.random()-0.5,Math.random()-0.5])
 	return new_

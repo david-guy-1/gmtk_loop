@@ -11,9 +11,9 @@ import { get_potion } from './items_to_draw';
 import _ from 'lodash';
 
 const person_size = [188,444]
-const explorer_coords = [50, 300]
-const magic_coords = [260, 300]
-const tour_coords = [500, 300]
+const explorer_coords = [50, CANVAS_HEIGHT-480]
+const magic_coords = [260, CANVAS_HEIGHT-480]
+const tour_coords = [500, CANVAS_HEIGHT-480]
 const bed_coords = [497, 280, 797-497, 476-280] // wh
 const fire_orb_jump_coords = [50, CANVAS_HEIGHT-120, 200, 55]; 
 const water_orb_jump_coords = [270, CANVAS_HEIGHT-120, 200, 55]; 
@@ -23,8 +23,8 @@ const back_rect = [CANVAS_WIDTH-80, CANVAS_HEIGHT-60]
 let map_size = [CANVAS_HEIGHT-100,CANVAS_HEIGHT-100] // height for the first one since it should be square
 const rect_sizes = [75, 55]
 
-const potion_size = [50, 50]; 
-const potion_start = [200, 70]
+const potion_size = [50, 75]; 
+const potion_start = [386, 77]
 type modes = "town"|"magic"|"tour"|"explorer"|"destroyed"|"forest map"|"hero"|"night"|"explorer out"|"magic2"|"dead magician"
 
 function PointAndClick(props : {g : game, ret : Function}) {
@@ -58,14 +58,14 @@ function PointAndClick(props : {g : game, ret : Function}) {
             if(pointInsideRectangleWH(x, y, explorer_coords, person_size)){
                 setMode("explorer")
                 if(g.monster_defeated == false || g.fire_orb_found == true){
-                    setMessage("I'm an explorer")
+                    setMessage("I'm an explorer. I explore faraway worlds and find treasure.")
                 } else { 
                     setMessage("Can I borrow the lava resistant suit? I promise to give you what I can find. ")
                 }
             }
             if(pointInsideRectangleWH(x, y, magic_coords, person_size)){
                 setMode("magic")
-                setMessage("I'm a magician")
+                setMessage("I'm a enchantress. I can help you with magic stuff.")
                 if(g.fire_orb_found && !g.temple_unlocked) {
                     setMode("magic2");
                     setMessagen(0);
@@ -170,7 +170,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 setMessagen(2);
             }
             else if(messagen == 2){
-                setMessage("He quickly makes the suit and gives it to you")
+                setMessage("She quickly makes the suit and gives it to you")
                 setMessagen(3);
             }
             else if(messagen == 3){
@@ -186,7 +186,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 setMessagen(1);
             }
             if(messagen == 1){
-                setMessage("A few days later, he returns with a fire orb")
+                setMessage("A few days later, she returns with a fire orb")
                 setMessagen(2);
             }
             if(messagen == 2){
@@ -279,7 +279,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 lst.push(d_image("town/magician.png",explorer_coords));
                 for(let x=0; x < 6; x ++){
                     for(let y=0; y< 4; y++){
-                        let pt : point = [potion_start[0] + x * potion_size[0], potion_size[1] + y * potion_size[1]];
+                        let pt : point = [potion_start[0] + x * potion_size[0], potion_start[1] + y * potion_size[1]];
                         let index = x+6*y; 
                         let [color, shape]= g.potions[index];
                         let cmd = get_potion(shape, color)
@@ -314,8 +314,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 lst.push(d_image("town/map_start.png", lincomb(-0.5, [40, 40], 0.5, map_size)));
             break;
             case "dead magician":
-                lst.push(d_image("town/magic shop.png",0,0));
-                lst.push(d_image("town/dead magician.png",100,440));
+                lst.push(d_image("town/dead magician.png",0,0));
                 lst.push(displace_command(get_potion(g.bad_combo[1], g.bad_combo[0]), [400, 400]));
         }
         //back button
