@@ -1,0 +1,23 @@
+step 1 : try to defeat a demon, die. When the demon attacks, it reveals a hidden door (in the room with the demon)
+
+step 2 : go into the hidden door. it's filled with traps. try to walk into them. die, but now you know where the traps are.
+
+step 3 : go into the hidden door, and across the room to the other side. You find a sword. You go back to the demon. You can't kill it, die. He says "hahaha, you can't defeat me with an unenchanted sword". 
+
+step 4 : get the sword (as in step 3), in the starting room there's an enchantment crystal. use it. The crystal breaks. it flashes various colors before it breaks (and when it breaks it explodes and kills you)
+
+step 5 : (now that you know the correct colors, you don't need to go through the traps and get the sword) touch the orbs in that order. it sends you through a portal to a volcano. die. in the volcano it says "do it twice!"
+
+step 6 : touch the orbs in the order twice. then go through a portal. you're taken to a town. you want to enchant a sword. ask the innkeeper. he tells you to go into a forest.  you go, but don't have a map or anything and get lost. at night a monster attacks. die
+
+step 7 : don't go to the forest this time. instead, talk to the innkeeper and click the bed to sleep in it. at night, a monster destroys the entire town. in the ruins you find a map. it shows the location of a hut. the monster kills you right afterwards though
+
+step 8 : go to the forest, there is a hut on the map. Go there. (you have enough time). You go there, and go to sleep in the hut. You have a dream that there is treasure in a certain part of the forest (colors of trees reverse). the monster comes and burns down the forest with you, you die. 
+
+step 9: you go there and find the treasure. it's a ring that helps defeat the monster. go and defeat the monster. it drops a lava resistant suit. go back into the cave and jump into the volcano. You still die.
+
+step 10: get the suit. the explorer tells you that she wants to visit a volcano, she asks if she can take the suit, and in return she'll get you whatever she finds.  you agree and she runs off. a few days later, she returns with a fire orb and gives it to you. the sorceress tells you that it can be used to build a "crystal stabilizer", but you also need a water orb. she tells you to go find it in an underwater temple. she casts a magic spell that lets you breathe underwater. it's another timed mission where you have to find the orb and get out before the spell wears off and you die. of course, you have no idea where to go so you die.  - the temple is an infinite grid of x, y coordinates. 
+
+step 11 : go back to the water temple. the first room with max(|x| , |y|) >= 7 that you visit always has an inscription telling you that you need to go the opposite way of where you are currently going. all correct X coord rooms have a red thing, and all correct Y's have a yellow thing. you find the water orb and get out back to town. time to go to the sorceress, except... she's dead. a certain potion of a certain color and shape is next to her dead body. you realize that's the problem. 
+
+step 12 : same as step 11, but click on one of the potions that the sorceress has. it will bring it to her attention. she'll notice and fix the mistake. then, do the water temple stuff again. she'll be alive this time when you get back. make the stabilizer, get and enchant the sword (don't forget to get it first ), and defeat the demon in 12 (easy) steps!

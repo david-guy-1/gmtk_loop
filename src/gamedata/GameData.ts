@@ -68,7 +68,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             if(globalStore.death_anim != "trap" ){
                 for(let i=0; i <n_trap_rows; i++){
                     for(let j=0; j <n_traps; j++){
-                        let point = [35*j+10, 100*i+190];
+                        let point = [35*j+10, 120*i+190];
                         output.push(d_image("trap_1.png", point));
                     }
                 }
@@ -87,7 +87,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
                 for(let i=0; i <n_trap_rows; i++){
                     for(let j=0; j <n_traps; j++){
 
-                        let point = [35*j+10, 100*i+190];
+                        let point = [35*j+10, 120*i+190];
                         output.push(d_image(`trap_${g.trap_safe_points[i] == j ? 1 : anim}.png`, point));
                     }
                 }                
@@ -155,7 +155,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             }
             output.push(d_image("megacano_true.png", offset)) 
             if(delay < fall_time + 30){
-                output.push(displace_command(d_image("vite.svg",[CANVAS_WIDTH/2, CANVAS_HEIGHT/2] ), [-20, -20]))
+                output.push(displace_command(d_image(g.facing == "left" ? "playerL.png" : "playerR.png" ,[CANVAS_WIDTH/2, CANVAS_HEIGHT/2] ), [-20, -20]))
             } else { 
                 g.dead = g.monster_defeated ? "You have a lava resistant suit but no way to get out of the volcano, so you still die" : "Fell into a volcano."
             }
@@ -167,7 +167,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
                 g.enter_forest_room = g.time;
             }
             let forest_time = g.time - g.enter_forest_room; 
-            output.push(displace_command(d_image("vite.svg", [CANVAS_WIDTH/2, CANVAS_HEIGHT/2]), [-20, -20]));
+            output.push(displace_command(d_image(g.facing == "left" ? "playerL.png" : "playerR.png" , [CANVAS_WIDTH/2, CANVAS_HEIGHT/2]), [-20, -20]));
             // displace + player loc = middle of canvas
             let displace = lincomb(1,[CANVAS_WIDTH/2, CANVAS_HEIGHT/2], -1, g.player) // add to each object  
             for(let [i,item] of g.large_objs.entries()){
@@ -189,8 +189,8 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
                     extra = 100
                 } 
                 (output[output.length-1] as drawRectangle2_command).transparency = 0.3;
-                // player starts out at 100, 621
-                let displacement = lincomb(1, [CANVAS_WIDTH/2, CANVAS_HEIGHT/2],-1,[100, 621 ])
+                // player starts out at 100, 591
+                let displacement = lincomb(1, [CANVAS_WIDTH/2, CANVAS_HEIGHT/2],-1,[100, 591 ])
                 displacement[0] -= (extra*extra)/20
                 output.push(d_image("monster.png", displacement))
                 if(extra == 100){
@@ -346,7 +346,7 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
             if(_.isEqual(g.current_temple_point , g.clue_point)){
                 output.push(d_image("temple/book.png", [300, 300]));
                 if(dist(g.player, [350, 350]) < 50){
-                    output.push(combine_obj(d_text("The book says : " + g.x_clue, 50, CANVAS_HEIGHT-80),{"color":"white"}) as drawText_command);
+                    output.push(combine_obj(d_text("The inscription says : " + g.x_clue, 50, CANVAS_HEIGHT-80),{"color":"white"}) as drawText_command);
                     output.push(combine_obj(d_text(g.y_clue, 50, CANVAS_HEIGHT-50),{"color":"white"}) as drawText_command);
                 }
             }
@@ -403,14 +403,17 @@ export let draw_fn : draw_fn_type = function(g : game,globalStore : globalStore_
         }
         if(g.dead.length > 0){
             let text =  d_text(g.dead, 10 , 450 )
+            if(g.room == "traps"){
+                text.y += 50;
+            }
             if(g.room == "temple" || g.room == "forest" || g.room == "main" || g.room == "demon"){
                 text.color = "white";
             }
             output.push(text)
         }
 
-        if(g.room != "volcano" && g.room != "forest" && g.room != "dream" && g.room != "monster" && g.room != "treasure"){
-            output.push(displace_command(d_image("vite.svg", g.player), [-20, -20])); 
+        if(g.dead.length == 0 && g.room != "volcano" && g.room != "forest" && g.room != "dream" && g.room != "monster" && g.room != "treasure"){
+            output.push(displace_command(d_image(g.facing == "left" ? "playerL.png" : "playerR.png" , g.player), [-20, -20])); 
         }  
     }
     return [output,true];
@@ -432,6 +435,38 @@ export let anim_fn : anim_fn_type = function(g: game, globalStore: globalStore_t
 }
 
 export let sound_fn : sound_fn_type = function(g : game, globalStore : globalStore_type ,events : events_type[]){
+    // rooms are : main, traps, demon, win, volcano, forest , monster, dream, treasure, temple. 
+    // town are : town, (NPC rooms can have the same), night, destroyed, dead enchantress 
+    if(g.room == "monster"){
+        return ["sounds/monster.wav", []];
+    }
+    if(g.room == "volcano"){
+        return ["sounds/volcano.mp3", []];
+    }
+    if(g.room == "traps"){
+        return ["sounds/traps.mp3", []];
+    }
+    if(g.room == "demon"){
+        return ["sounds/demon.mp3", []];
+    }
+    if(g.room == "win"){
+        return ["sounds/win.mp3", []];
+    }
+    if(g.room == "treasure"){
+        return ["sounds/treasure.mp3", []];
+    }
+    if(g.room == "dream"){
+        return ["sounds/dream.mp3", []];
+    }
+    if(g.room == "main"){
+        return ["sounds/main.mp3", []];
+    }
+    if(g.room == "forest"){
+        return ["sounds/forest.mp3", []];
+    }  
+    if(g.room == "temple"){
+        return ["sounds/temple.mp3", []];
+    }  
     return [undefined,[]]
 }
 
@@ -450,6 +485,9 @@ export let prop_commands : prop_commands_type = function(g : game,globalStore : 
         output.push(["swap", "pointandclick"]);
     }
     if(g.room == "temple" && g.water_orb_found == true){
+        output.push(["swap", "pointandclick"]);
+    }
+    if(g.room == "win"){
         output.push(["swap", "pointandclick"]);
     }
     return output; 

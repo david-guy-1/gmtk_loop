@@ -29,9 +29,26 @@ function App() {
   load_images(); 
   const [g, setG] = useState<game | undefined>(undefined);
   const [type, setType] = useState<"dungeon"|"pointandclick">("dungeon");
+  const [load, setLoad]  = useState<boolean>(false);
   if(g == undefined){
-    
-    return <button onClick={() => setG(new game())}>Click to start</button>
+    if(load == true){
+      setTimeout(() => setG(new game()), 200);
+      return <h1>Loading...</h1>
+    }
+    return <div><h1>Demon of Repetition and Failure</h1><br/>
+    <h2>Oh no! There's a demon!</h2>
+    <h3>It's so strong that it even ate this title page</h3>
+    <p>(actually I just ran out of time to make the title page)</p>
+    <p>You must go and defeat it!</p>
+    <ul>
+      <img src="gmtk.png" /><br />
+
+      <li>Game created by me (TDGperson)</li>
+      <li>Piano sounds form TEDAGame <a target="_blank" href="https://freesound.org/people/TEDAgame/packs/25405/">Link</a></li>
+      <li> <a target="_blank" href="walkthrough.txt">Walkthrough</a></li>
+      <li>Created for the <a target="_blank" href="https://itch.io/jam/gmtk-2025">GMTK Game Jam </a></li>
+    </ul>
+    <div style={{width:CANVAS_WIDTH, height:100, backgroundColor:"#ffcccc", fontSize:60,textAlign:"center"}} onClick={() => setLoad(true)}>    Start Game</div></div>
   } else {
     if(type == "dungeon"){
       // get gameData
@@ -74,7 +91,7 @@ function App() {
       for(let x of ["mousemove a","touchstart a", "mousedown a","touchend a" ,"mouseup a" ] ){
         delete events[x]; 
       }
-      return <PointAndClick g={g} ret={() => setType("dungeon")}/>
+      return <PointAndClick g={g} ret={() => setType("dungeon")} reset={() => {setG(undefined); setLoad(false); setType("dungeon")}}/>
 
     }
   }

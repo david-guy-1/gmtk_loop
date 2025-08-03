@@ -1,0 +1,55 @@
+    // rooms are : main, volcano, traps, demon, win, forest , monster, dream, treasure, temple. 
+    // town are : town, (NPC rooms can have the same), night, destroyed, dead enchantress 
+
+town 
+
+lst = interpret("c4 ^ ^ . . c4 ^ ^ ^ v v . . c4 ^ ^^^  vv v . f4 v v . e4 v v v . . f4 ^ ^ . vv . vv . f4 ^ ^ . vv . vv . d4 ^^^^^ . . v v ^^ v vvv . ^^ v v . ^ vv . v . - ", bpm=200)
+
+
+sorceress dead 
+
+lst = interpret("b3 . . . b3 ^ ^ . . . b3 ^  - v v . . . b4 - v - . vv . . v - - . . . b4 . vvvvv . vvv . b3 . . ^^^ . . - . . - . . - . . . . . . . - ", bpm=200)
+
+town destroyed
+
+lst = interpret("f4 ^^^^^ - . .  f4 ^^^^^ -  . .  . . f4 ^^^^^^ v . . f4 ^^^^^^ v . .  . . f4 ^ v v .  v ^^ v . v ^^ v . . - f4 ^^^^^ - - - . . v ^ v - vvvvvv . . . . - f4 ^ ^ . . . v v . . - v ", bpm=200)
+
+night
+
+lst = interpret("c4 ^^ - . . . ^ v - . . c4 ^^ - . . . a3 ^^^ - ^^^^^ - . . . d4 ^  - . . . c5 v v - . . . . c4 . . . . a3 ^^^ . . . .  - ^^^^^ - - v . . . ^ vvv . . . ^^ v - . . . . c4 ^ ^ v . . . c4 ", bpm=200)
+
+volcano 
+
+lst = interpret("f4 ^ ^ v v ^ v - . e4 ^ ^ v v ^ v - . e4 ^^^ - - vvv - - v . d4 ^^^ - - vvv - - v . ^ ^ ^ ^ - - v v ", bpm=300)
+
+traps
+
+lst = interpret("f4 v ^ ^ ^ v v - f4 v ^ ^ ^ v v -  g4 v ^ ^ ^ v v - g4 v ^ ^ ^ v v - a4 ^ - - v v - - a4 ^ v v ^ v - - ", bpm=100)
+
+demon
+
+lst = interpret("f4 ^^^ - - v v - - f4 ^^^ - - ^ v v ^ f4 ^^^ - - ^ - v - f4 ^^^ - - vv v ^ v b4 vvvvv - - ^^^ - - - b4 vvvvv - - ^^^ ^^ - - f4 ^^^ - - v v ^ v b4 - - - vvvvv - ^^^ - ", bpm=200)
+
+win
+
+lst = interpret("c4 ^ ^ ^^^^^ c4 ^ ^ ^^^^^  ", bpm=200)
+
+treasure
+
+lst = interpret("c4 ^ ^ ^^^ c4 ^ - - ", bpm=200)
+
+dream 
+
+lst = interpret("c4 v v v v ^ ^ ^^^^^ . . c4 v v  v ^ v v -  ", bpm=100)
+
+main
+
+lst = interpret("c4  ^^ ^^^ . .  - - - . . c4  ^^ ^^^ .  ^ v - . . ^ v v . c4  ^^ ^^^ v - . . c4 ^^^^^ vv . .  c4 ^^^^^ v . c4 ^^^^^ v . . . c4 . ^^^ . vv . ^ . .  - . - c4 ^ ^^^^ v v vvv . - c4 ^ ^^^^ v v vvv . -  ", bpm=200)
+
+forest 
+
+lst = interpret("f4 vvvvv ^^^ .  ^^ - - . . . vvvvv ^^^ ^^ . . vvv ^^^ ^^^ . v ^ v vv . . . ^^^ - - .  v - - . v - - . v - - . - v ^ ^ v - . . . - ^^^ - - . . . ^ v v . . vv ^^^  -  . . . - ", bpm=200)
+
+temple 
+
+lst = interpret("c4 . v ^^ ^^^ . . c4 . v ^^ ^^^ ^ v . . . c4 . v ^^ ^^^ ^ v . vv v  . . - - ^ - ^^  v . . . - vv ^ ^ . . . v ^^^ - vv  v . . . - . . ^^^ . . v . . v . . v . . ^ v - ", bpm=200)

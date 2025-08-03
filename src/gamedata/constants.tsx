@@ -1,8 +1,8 @@
-export const n_trap_rows : number = 5;
+export const n_trap_rows : number = 4;
 
-export const n_traps : number = 5;
+//export const n_traps : number = 5;
 //DEBUG
-//export const n_traps : number = 23;
+export const n_traps : number = 23;
 export const  n_colors : number = 5; 
 export const CANVAS_WIDTH=800;
 export const CANVAS_HEIGHT=700;

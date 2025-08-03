@@ -1,13 +1,24 @@
 import { loadImage } from "../canvasDrawing";
 
 export function load_images(){
-    loadImage("enchantment.png");
-    loadImage("main room.png");
     loadImage("demon room.png");
+    loadImage("enchantment.png");
+    loadImage("enchantment_b.png");
+    loadImage("forest_bg.png");
+    loadImage("gmtk.png");
+    loadImage("main room.png");
     loadImage("megacano.png");
     loadImage("megacano_true.png");
     loadImage("monster.png");
+    loadImage("monster_bg.png");
+    loadImage("mute.png");
+    loadImage("mute2.png");
+    loadImage("playerL.png");
+    loadImage("playerR.png");
+    loadImage("temple_bg.png");
+    loadImage("town_door.png");
     loadImage("trap.png");
+    loadImage("traps room.png");
     loadImage("trap_1 - Copy.png");
     loadImage("trap_1.png");
     loadImage("trap_2.png");
@@ -16,23 +27,16 @@ export function load_images(){
     loadImage("trap_5.png");
     loadImage("trap_6.png");
     loadImage("vite.svg");
-    loadImage("forest/colorful rock 2.png");
-    loadImage("forest/colorful rock.png");
+    loadImage("volcano_door.png");
     loadImage("forest/forest hut.png");
     loadImage("forest/hut.png");
     loadImage("forest/hut_map.png");
-    loadImage("forest/large rock.png");
-    loadImage("forest/large tree.png");
-    loadImage("forest/map_large tree.png");
-    loadImage("forest/small rock.png");
-    loadImage("forest/small shrub.png");
     loadImage("forest/treasure.png");
     loadImage("forest/treasure_cutscene.png");
     loadImage("temple/book.png");
     loadImage("temple/grass.png");
-    loadImage("temple/green thing.png");
+    loadImage("temple/red thing.png");
     loadImage("temple/rock.png");
-    loadImage("temple/temple_bg.png");
     loadImage("temple/water orb.png");
     loadImage("temple/yellow thing.png");
     loadImage("town/dead magician.png");
@@ -45,4 +49,5 @@ export function load_images(){
     loadImage("town/tour room.png");
     loadImage("town/town destroyed.png");
     loadImage("town/town.png");
+    loadImage("town/win.png");
 }

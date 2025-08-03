@@ -35,6 +35,9 @@ export function setMuted(x : boolean){
 }
 
 export function changeSound(s : string | undefined){
+    if(s == playing){
+        return; 
+    }
     sound_obj.pause(); 
     if(s != undefined){
         sound_obj = new Audio(s);

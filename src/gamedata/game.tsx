@@ -28,7 +28,7 @@ class simple_rand {
 class game implements game_interface{
     player : point = [400,400];
     target : point = [400,400];
-
+    facing : "left" | "right" = "left";
     room : string = "";
     walls : rect[] = []; 
     items : [string, point | rect][] = [] // always WH 
@@ -81,7 +81,7 @@ class game implements game_interface{
     water_orb_found : boolean = false; 
     hero_cutscene_seen : boolean = false;
     sword_enchanted : boolean = false; 
-    
+    win : boolean = false; 
     // magic potion 
     potions : string[][] = []
     bad_combo : string[] = [];
@@ -123,7 +123,7 @@ class game implements game_interface{
             this.hut_loc = [Math.random() * forest_dims[0],Math.random() * forest_dims[1]]
         }
 
-        while(inf_norm(this.treasure_loc , [forest_dims[0]/2,forest_dims[1]/2]) < forest_dims[0]*0.4){
+        while(inf_norm(this.treasure_loc , [forest_dims[0]/2,forest_dims[1]/2]) < forest_dims[0]*0.4 || inf_norm(this.hut_loc, this.treasure_loc)  < forest_dims[0]*0.8){
             this.treasure_loc = [Math.random() * forest_dims[0],Math.random() * forest_dims[1]]
         }
         // start off placing some stuff 
@@ -226,6 +226,7 @@ class game implements game_interface{
             return []
         }
         let lst : events_type[] = [] ; 
+        this.facing = this.target[0] < this.player[0] ? "left" : "right"
         if(this.room == "forest"){
             this.player = moveIntoRectangleWH(this.player,[0,0], forest_dims) as point
             let old_player = JSON.parse(JSON.stringify(this.player));
@@ -295,9 +296,9 @@ class game implements game_interface{
                     this.dest_point[1] *= -1;
                 }
                 if(this.dest_point[0] < 0) { 
-                    this.x_clue = "move west until you see a green thing";
+                    this.x_clue = "move west until you see a red thing";
                 } else {
-                    this.x_clue = "move east until you see a green thing";
+                    this.x_clue = "move east until you see a red thing";
                 }
                 
                 if(this.dest_point[1] < 0) { 
@@ -307,6 +308,10 @@ class game implements game_interface{
                 }
 
             }
+        }
+        if(this.room == "demon" && this.sword_enchanted && this.tap){
+            this.enter_room("win", [0,0]);
+            this.win = true;
         }
         if(this.room == "main"){
             if(this.player[0] > CANVAS_WIDTH-20){
@@ -378,7 +383,7 @@ class game implements game_interface{
                         continue;
                     }
                     // trigger radius is 20
-                    this.items.push(["trap",[35*j+20, 100*i+200]]) // also update where it's drawn
+                    this.items.push(["trap",[35*j+20, 120*i+200]]) // also update where it's drawn
                 }
             }
         }

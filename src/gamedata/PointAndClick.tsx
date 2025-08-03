@@ -9,6 +9,7 @@ import { point } from '../interfaces';
 import { displace_command } from '../rotation';
 import { get_potion } from './items_to_draw';
 import _ from 'lodash';
+import { changeSound } from '../Sound';
 
 const person_size = [188,444]
 const explorer_coords = [50, CANVAS_HEIGHT-480]
@@ -25,35 +26,50 @@ const rect_sizes = [75, 55]
 
 const potion_size = [50, 75]; 
 const potion_start = [386, 77]
-type modes = "town"|"magic"|"tour"|"explorer"|"destroyed"|"forest map"|"hero"|"night"|"explorer out"|"magic2"|"dead magician"
+type modes = "town"|"magic"|"tour"|"explorer"|"destroyed"|"forest map"|"hero"|"night"|"explorer out"|"magic2"|"dead magician"|"win"
 
-function PointAndClick(props : {g : game, ret : Function}) {
+function PointAndClick(props : {g : game, ret : Function, reset : Function}) {
     let g : game = props.g;
     let ret = props.ret
     let canvasRef = useRef<HTMLCanvasElement>(null);
     let start_mode : modes = "town";
     let start_string = "Welcome to town!"
-    if(g.town_destroyed) {
-        start_mode = "destroyed";
-        start_string = " The town has been destroyed";
-    }
-    if(g.monster_defeated && !g.hero_cutscene_seen){
-        start_mode = "hero"
-        start_string = " You're a hero! You defeated the monster!";
-    }
-    if(g.water_orb_found && !g.bad_potion_solved){
-        start_mode = "dead magician";
-        start_string = "You return to town to look for the sorceress.";
-    }
-    if(g.water_orb_found && g.bad_potion_solved){
-        start_mode = "magic";
-        start_string = "The enchantment crystal should work now. Now go defeat the demon!"
+    if(g.win){
+        start_mode = "win";
+        start_string = "You defeated the demon! You win!"
+
+    } else { 
+        if(g.town_destroyed) {
+            start_mode = "destroyed";
+            start_string = " The town has been destroyed";
+        }
+        if(g.monster_defeated && !g.hero_cutscene_seen){
+            start_mode = "hero"
+            start_string = " You're a hero! You defeated the monster!";
+        }
+        if(g.water_orb_found && !g.bad_potion_solved){
+            start_mode = "dead magician";
+            start_string = "You return to town to look for the sorceress.";
+        }
+        if(g.water_orb_found && g.bad_potion_solved){
+            start_mode = "magic";
+            start_string = "The enchantment crystal should work now. Now go defeat the demon!"
+        }
     }
     const [mode, setMode] = useState<modes>(start_mode);
     const [messagen, setMessagen] = useState<number>(0);
     const [message, setMessage] = useState<string>(start_string);
     function click(e : MouseEvent){ 
         let [x,y] = [e.offsetX, e.offsetY];
+        if(mode == "win"){
+            if(messagen == 0){
+                setMessage("Click anywhere to restart from the beginning");
+                setMessagen(1);
+            }
+            if(messagen == 1){
+                props.reset(); 
+            }
+        }
         if(mode == "town"){
             if(pointInsideRectangleWH(x, y, explorer_coords, person_size)){
                 setMode("explorer")
@@ -162,18 +178,26 @@ function PointAndClick(props : {g : game, ret : Function}) {
         }
         if(mode == "hero"){
             if(messagen == 0){
-                setMessage("The explorer says that the monster scales can be useful...")
+                setMessage("The explorer looks at monster's corpse, something caught her interest.")
                 setMessagen(1);
             }
-            else if(messagen == 1){
-                setMessage("... for making a lava resistant suit!")
+            if(messagen == 1){
+                setMessage("She tells you that that the monster scales can be useful...")
                 setMessagen(2);
             }
             else if(messagen == 2){
-                setMessage("She quickly makes the suit and gives it to you")
+                setMessage("... for making a lava resistant suit!")
                 setMessagen(3);
             }
             else if(messagen == 3){
+                setMessage("She quickly makes the suit and gives it to you")
+                setMessagen(4);
+            }
+            else if(messagen == 4){
+                setMessage("You're impressed by her crafting skills. ")
+                setMessagen(5);
+            }
+            else if(messagen == 5){
                 setMessage("Welcome to town")
                 setMessagen(0);
                 setMode("town");
@@ -194,7 +218,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 setMessagen(3);
             }
             if(messagen == 3){
-                setMessage("Not sure what it's used for, ask the magician.")
+                setMessage("Not sure what it's used for, ask the enchantress.")
                 setMode("town");
                 setMessagen(0);
                 g.fire_orb_found = true;
@@ -242,7 +266,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 setMessagen(3);
             }
             if(messagen == 3){
-                setMessage(`If only I knew earlier, I could have told her about it.`)
+                setMessage(`If only you knew earlier, you could have told her about it.`)
                 setMessagen(4);
             }
             if(messagen == 4){
@@ -257,9 +281,18 @@ function PointAndClick(props : {g : game, ret : Function}) {
         console.log("changed " + mode +  " " + message);
         let lst : draw_command[] = []; 
         switch(mode){
+            case "win":
+                changeSound("sounds/win.mp3");
+                lst.push(d_image("town/town.png", 0, 0));
+                lst.push(d_image("town/win.png", 0, -50));
+                lst.push(d_image("town/explorer.png", explorer_coords));
+                lst.push(d_image("town/magician.png",magic_coords));
+                lst.push(d_image("town/tour guide.png", tour_coords));
+            break;
             case "town":
             case "hero":
             case "explorer out":
+                changeSound("sounds/town.mp3");
                 lst.push(d_image("town/town.png", 0, 0));
                 if(mode != "explorer out" || messagen >= 2){
                     lst.push(d_image("town/explorer.png", explorer_coords));
@@ -268,17 +301,20 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 lst.push(d_image("town/tour guide.png", tour_coords));
             break
             case "explorer":
+                changeSound("sounds/town.mp3");
                 lst.push(d_image("town/town.png", 0, 0));
                 lst.push(d_image("town/explorer.png", explorer_coords));
 
             break
             case "tour":
+                changeSound("sounds/town.mp3");
                 lst.push(d_image("town/tour room.png", 0, 0));
 
                 lst.push(d_image("town/tour guide.png", explorer_coords));
             break
             case "magic":
             case "magic2":
+                changeSound("sounds/town.mp3");
                 lst.push(d_image("town/magic shop.png", 0, 0));
                 lst.push(d_image("town/magician.png",explorer_coords));
                 for(let x=0; x < 6; x ++){
@@ -293,12 +329,15 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 }
             break
             case "destroyed":
+                changeSound("sounds/town destroyed.mp3");
                 lst.push(d_image("town/town destroyed.png", 0, 0));
             break;
             case "night":
+                changeSound("sounds/night.mp3");
                 lst.push(d_image("town/night.png", 0, 0));
             break
             case "forest map":
+                changeSound("sounds/town destroyed.mp3");
                 lst.push({type:"drawRectangle2", "tlx":0, "tly":0, "height":2000, "width":3000, "fill":true, "color":"black"})
                 let x_scale = forest_dims[0] / map_size[0]
                 let y_scale = forest_dims[1] / map_size[1];
@@ -318,6 +357,7 @@ function PointAndClick(props : {g : game, ret : Function}) {
                 lst.push(d_image("town/map_start.png", lincomb(-0.5, [40, 40], 0.5, map_size)));
             break;
             case "dead magician":
+                changeSound("sounds/sorceress dead.mp3");
                 lst.push(d_image(messagen == 0? "town/town.png" : "town/dead magician.png",0,0));
                 if(messagen != 0){
                     lst.push(displace_command(get_potion(g.bad_combo[1], g.bad_combo[0]), [380, 210]));
